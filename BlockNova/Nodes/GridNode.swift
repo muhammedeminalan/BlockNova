@@ -144,22 +144,25 @@ final class GridNode: SKNode {
         let cs   = C.cellSize
         let half = CGFloat(C.cols) * cs / 2
 
-        // Lokal koordinattan hucre indexi: positionFor'un tersi
-        let col = Int((localPos.x + half) / cs)
-        let row = Int((half - localPos.y) / cs)
+        // Parcanin gorsel merkezi ile grid hucre merkezi uyusmasi icin anchor offset uygula
+        let anchorOffset = piece.gridAnchorOffset(cellSize: cs)
+        let anchorPos = CGPoint(x: localPos.x + anchorOffset.x, y: localPos.y + anchorOffset.y)
 
-        // Seklin sol-ust referansini almak icin minimum offsetleri bul
-        let minRow = piece.shape.offsets.map(\.row).min() ?? 0
-        let minCol = piece.shape.offsets.map(\.col).min() ?? 0
+        // Lokal koordinattan hucre indexi: positionFor'un tersi
+        // Round kullan: gorsel merkez hangi hucreye en yakin ise onu secer
+        let colFloat = (anchorPos.x + half - cs / 2) / cs
+        let rowFloat = (half - cs / 2 - anchorPos.y) / cs
+        let col = Int(round(colFloat))
+        let row = Int(round(rowFloat))
 
         // Parcanin tum hucreleri grid icinde mi? Biri bile disariysa yerlestirilemez
-        for offset in piece.shape.offsets {
-            let r = row + offset.row - minRow
-            let c = col + offset.col - minCol
+        for offset in piece.normalizedOffsets {
+            let r = row + offset.row
+            let c = col + offset.col
             if !isValid(row: r, col: c) { return nil }
         }
 
-        return (row: row - minRow, col: col - minCol)
+        return (row: row, col: col)
     }
 
     // MARK: - Highlight

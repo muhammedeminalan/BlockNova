@@ -378,16 +378,26 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         draggedPiece = selectedPiece
         originalPosition = selectedPiece.position
 
-        // dragOffset: parmak ile parca merkezi farki + yukari kaldirma
-        // Parmak parcanin gorsel merkezini kapatmasin — surukleme natural hissettirir
+        // dragOffset: X ekseninde parmak konumunu koru, Y ekseninde sabit yukari kaldir
+        // Bu sayede parca parmagin altinda kalmaz, her cihazda net gorunur
         dragOffset = CGPoint(
             x: selectedPiece.position.x - location.x,
-            y: selectedPiece.position.y - location.y + C.dragOffsetY
+            y: C.dragOffsetY
         )
+
+        // Surukleme baslar baslamaz parcayi yeni hedefe tasi — gecikme hissini kaldir
+        let immediatePosition = CGPoint(x: location.x + dragOffset.x, y: location.y + dragOffset.y)
+        selectedPiece.position = immediatePosition
+
+        // Highlight dogru konumdan baslasin diye onceki anchor'i sifirla
+        lastHighlightAnchor = nil
 
         // beginDrag: scale up, zPosition → on plan
         // buildCells CAGIRILMAZ — touch event ortasinda node yaratma gesture lock yapar
         selectedPiece.beginDrag()
+
+        // Ilk frame'de highlight guncelle — gorsel ve mantik senkron olsun
+        updateHighlight(for: selectedPiece)
     }
 
     // MARK: - TOUCH MOVE
@@ -469,13 +479,10 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         }
         lastHighlightAnchor = (row: row, col: col)
 
-        // Seklin sol-ust referansini almak icin minimum offsetleri bul
-        let minRow = piece.shape.offsets.map(\.row).min() ?? 0
-        let minCol = piece.shape.offsets.map(\.col).min() ?? 0
-
         // Seklin tum hucrelerinin grid pozisyonlarini hesapla
-        let positions: [(row: Int, col: Int)] = piece.shape.offsets.map {
-            (row: row + $0.row - minRow, col: col + $0.col - minCol)
+        // Normalized offsets kullanilir — her frame'de min hesaplama yapilmaz
+        let positions: [(row: Int, col: Int)] = piece.normalizedOffsets.map {
+            (row: row + $0.row, col: col + $0.col)
         }
 
         let valid = gridNode.canPlace(piece.shape, at: row, col: col)

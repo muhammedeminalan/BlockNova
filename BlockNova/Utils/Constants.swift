@@ -65,7 +65,8 @@ enum C {
     static var previewCellSize: CGFloat { cellSize * 0.85 }
 
     // MARK: - Surukleme
-    // Parmak parcayi kapatmasin diye yukari ofset — hucre boyutuna gore hesaplanir
+    // Parmak parcayi kapatmasin diye sabit yukari ofset — hucre boyutuna gore hesaplanir
+    // Sabit ofset kullanmak, parmak nereye dokunsa da parcayi gorunur tutar
     static var dragOffsetY: CGFloat { cellSize * 1.1 }
 
     // MARK: - Z Pozisyonları (Katman Sırası)

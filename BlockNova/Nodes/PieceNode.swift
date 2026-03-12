@@ -16,6 +16,22 @@ final class PieceNode: SKNode {
     /// Bu parcanin sekil modeli — hucre offsetleri, renk, boyut icin
     let shape: BlockShape
 
+    /// Seklin minimum satir indeksi — normalize offset ve merkez hesaplari icin
+    private let minRow: Int
+    /// Seklin minimum sutun indeksi — normalize offset ve merkez hesaplari icin
+    private let minCol: Int
+    /// Seklin maksimum satir indeksi — merkez hesaplari icin
+    private let maxRow: Int
+    /// Seklin maksimum sutun indeksi — merkez hesaplari icin
+    private let maxCol: Int
+
+    /// Seklin normalize edilmis offset listesi — highlight ve yerlestirmede hiz icin
+    /// Normalizasyon: minRow/minCol sifirlanir, offsetler 0'dan baslar
+    let normalizedOffsets: [(row: Int, col: Int)]
+
+    /// Seklin merkez kaymasini hucre biriminde tutar — grid'e hizalama icin
+    private let centerOffsetInCells: CGPoint
+
     /// Tepsi icindeki slot indexi (0, 1, 2) — yerlestirme sonrasi ilgili slotu temizlemek icin
     var slotIndex: Int = 0
 
@@ -30,7 +46,30 @@ final class PieceNode: SKNode {
     /// shape: hangi blok sekli
     init(shape: BlockShape) {
         self.shape = shape
+
+        // Seklin minimum/maksimum offsetlerini bir kez hesapla — performans icin
+        let localMinRow = shape.offsets.map(\.row).min() ?? 0
+        let localMinCol = shape.offsets.map(\.col).min() ?? 0
+        let localMaxRow = shape.offsets.map(\.row).max() ?? 0
+        let localMaxCol = shape.offsets.map(\.col).max() ?? 0
+
+        self.minRow = localMinRow
+        self.minCol = localMinCol
+        self.maxRow = localMaxRow
+        self.maxCol = localMaxCol
+
+        // Seklin merkez kaymasini hucre biriminde hesapla — grid hizalama icin
+        let centerX = CGFloat(localMaxCol - localMinCol) / 2
+        let centerY = CGFloat(localMaxRow - localMinRow) / 2
+        self.centerOffsetInCells = CGPoint(x: centerX, y: centerY)
+
+        // Normalize offsetleri hazirla — her frame hesaplama yapma
+        self.normalizedOffsets = shape.offsets.map {
+            (row: $0.row - localMinRow, col: $0.col - localMinCol)
+        }
+
         super.init()
+
         // Hucreleri sadece bir kez olustur — surukleme performansi icin kritik
         buildCells()
     }
@@ -56,11 +95,6 @@ final class PieceNode: SKNode {
 
         // Seklin lokal merkezi: tum hucreler buna gore offsetlenir
         // Bu sayede node'un (0,0) noktasi seklin gorsel merkezine gelir
-        let minRow = shape.offsets.map(\.row).min() ?? 0
-        let minCol = shape.offsets.map(\.col).min() ?? 0
-        let maxRow = shape.offsets.map(\.row).max() ?? 0
-        let maxCol = shape.offsets.map(\.col).max() ?? 0
-
         let centerOffsetX = CGFloat(maxCol - minCol) / 2 * cs
         let centerOffsetY = CGFloat(maxRow - minRow) / 2 * cs
 
@@ -76,6 +110,18 @@ final class PieceNode: SKNode {
             cell.zPosition = 0.1
             addChild(cell)
         }
+    }
+
+    // MARK: - Grid Hizalama
+
+    /// Grid hesaplari icin parcanin sol-ust hucre merkezine kayma offsetini verir
+    /// Bu offset, parcanin gorsel merkezini grid hucre merkezleriyle hizalar
+    func gridAnchorOffset(cellSize: CGFloat) -> CGPoint {
+        // Sol-ust hucre merkezine kayma: X negatif, Y pozitif
+        return CGPoint(
+            x: -centerOffsetInCells.x * cellSize,
+            y:  centerOffsetInCells.y * cellSize
+        )
     }
 
     // MARK: - Surukleme Baslatma
