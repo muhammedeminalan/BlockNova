@@ -37,6 +37,10 @@ final class GameManager {
     /// Tüm zamanların en yüksek skoru — UserDefaults'ta kalıcı
     private(set) var highScore: Int
 
+    /// Bu oyun oturumunda en az bir kez rekor kırıldı mı?
+    /// Overlay'de "YENİ REKOR" badge'ini göstermek için kullanılır.
+    private(set) var newRecordAchieved: Bool = false
+
     /// Olayları GameScene'e iletmek için — weak: retain cycle önler
     weak var delegate: GameManagerDelegate?
 
@@ -84,6 +88,7 @@ final class GameManager {
     func reset() {
         score = 0
         state = .playing
+        newRecordAchieved = false
         // highScore korunur — oyun bitmeden silmek yanlış olur
     }
 
@@ -99,6 +104,8 @@ final class GameManager {
             // Kalıcı kayıt: uygulama kapansa da korunur
             UserDefaults.standard.set(highScore, forKey: C.highScoreKey)
             isNewRecord = true
+            // Bu oturumda rekor kırıldığını işaretle — oyun bitince overlay'de gösterilir
+            newRecordAchieved = true
         }
         delegate?.didUpdateScore(score, highScore: highScore, isNewRecord: isNewRecord)
     }

@@ -35,8 +35,8 @@ final class GameViewModel {
     /// Ekranda gösterilecek rekor metni
     var rekorMetni: String { "\(manager.highScore)" }
 
-    /// "EN YUKSEK: 1234" formatında tek satır rekor
-    var rekorSatiri: String { "EN YUKSEK: \(manager.highScore)" }
+    /// "EN YÜKSEK: 1234" formatında tek satır rekor — overlay'de tek satır bilgi için
+    var rekorSatiri: String { "EN YÜKSEK: \(manager.highScore)" }
 
     /// Oyun oynuyor mu?
     var oynuyor: Bool { manager.state == .playing }
@@ -50,4 +50,8 @@ final class GameViewModel {
     var oyunSonuBilgisi: (skor: String, rekor: String) {
         (skor: "\(manager.score)", rekor: rekorSatiri)
     }
+
+    /// Bu oyun oturumunda yeni rekor kırıldı mı?
+    /// Overlay'de "YENİ REKOR" badge'ini göstermek için kullanılır.
+    var oyunSonuYeniRekorMu: Bool { manager.newRecordAchieved }
 }
