@@ -1,0 +1,110 @@
+# =========================================================
+# macOS sistem dosyaları
+# Neden ignore ediyoruz?
+# Çünkü bunlar proje kodu değil, Finder ve sistem metadata dosyalarıdır.
+# Repo'ya girince sadece gereksiz gürültü yaparlar.
+# =========================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# =========================================================
+# Xcode kullanıcıya özel dosyalar
+# Neden ignore ediyoruz?
+# Çünkü bunlar kişisel editör durumu, pencere düzeni ve kullanıcı state verileridir.
+# Takım içinde paylaşılması gerekmez, çatışma üretir.
+# =========================================================
+*.xcuserstate
+*.xcscmblueprint
+xcuserdata/
+
+# =========================================================
+# Xcode çalışma alanı kullanıcı verileri
+# Neden ignore ediyoruz?
+# Workspace paylaşılabilir ama kullanıcıya özel alt veriler paylaşılmaz.
+# =========================================================
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# =========================================================
+# Build çıktıları
+# Neden ignore ediyoruz?
+# Çünkü derleme ile tekrar üretilebilirler.
+# Repo'ya atmak boyutu şişirir ve gereksizdir.
+# =========================================================
+build/
+Build/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# =========================================================
+# Swift Package Manager
+# Neden ignore ediyoruz?
+# .build klasörü lokal build cache'tir.
+# Package.resolved konusu takıma göre değişebilir:
+# uygulama projelerinde çoğu zaman commit edilir.
+# Bu yüzden onu ignore ETMİYORUZ.
+# =========================================================
+.build/
+.swiftpm/
+
+# =========================================================
+# Test / coverage / log dosyaları
+# Neden ignore ediyoruz?
+# Bunlar çalışma çıktısıdır, kaynak kod değildir.
+# =========================================================
+*.log
+*.swp
+*.tmp
+*.temp
+*.result
+*.xcresult
+
+# =========================================================
+# Fastlane kullanırsan oluşabilecek çıktı dosyaları
+# Kullanmasan da zararı yok; ileride eklenirse repo kirlenmez.
+# =========================================================
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+
+# =========================================================
+# CocoaPods kullanırsan:
+# SpriteKit projelerinde şart değil ama ileride eklenebilir.
+# Eğer Pods klasörünü repo'ya almak istemiyorsan bunu aç.
+# Çoğu modern ekip Podfile.lock'ı commit eder ama Pods'u etmez.
+# =========================================================
+Pods/
+
+# =========================================================
+# Carthage kullanırsan:
+# Binary build çıktıları paylaşılmaz.
+# =========================================================
+Carthage/Build/
+
+# =========================================================
+# Firebase / Google servis dosyaları
+# Dikkat:
+# Eğer bu dosyalar public repo'ya gitmesin istiyorsan ignore et.
+# Şu an offline bir oyun için gerekmeyebilir ama ileride eklenirse faydalı.
+# =========================================================
+GoogleService-Info.plist
+
+# =========================================================
+# Gizli anahtar / ortam dosyaları
+# Neden ignore ediyoruz?
+# Yanlışlıkla token, secret, private config paylaşmamak için.
+# =========================================================
+.env
+.env.*
+*.secret
+*.private
+
+# =========================================================
+# Archive / export artık dosyaları
+# =========================================================
+*.mobileprovision
+*.orig
