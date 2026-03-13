@@ -113,6 +113,7 @@ enum C {
     static let colorT           = UIColor(hex: "#FFA500") // Koyu Turuncu
     static let colorS           = UIColor(hex: "#32CD32") // Lime Yesil
     static let colorZ           = UIColor(hex: "#DA70D6") // Orkide
+    static let colorSquare3     = UIColor(hex: "#FF1744") // Ateş Kırmızısı — 3x3 en büyük blok
 
     // MARK: - Font
     // Tipografi tutarliligi icin merkezi font adlari

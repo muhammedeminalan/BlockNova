@@ -172,9 +172,10 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     // MARK: - Parça Dağıtma
 
     /// Alt tepsiye ShapeDispenser'dan 3 yeni parça yerleştirir.
+    /// Grid'in güncel durumu iletilir — akıllı üretim için grid analizi burada başlar.
     func dealNewPieces() {
-        // Üç katmanlı çeşitlilik sistemiyle şekilleri çek
-        let shapes   = shapeDispenser.ucunu()
+        // Grid durumunu ilet: ShapeDispenser neredeyse dolu satır/sütun olduğunu bilsin
+        let shapes   = shapeDispenser.ucunu(grid: gridNode.cellColors)
         let slotWidth = C.screenW / 3
         let midY      = safeAreaFrame.minY + C.bottomPanelHeight * 0.50
 

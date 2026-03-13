@@ -14,6 +14,7 @@ enum BlockShapeType: CaseIterable {
     case vertical2
     case vertical3
     case square2x2
+    case square3x3  // 3x3 tam kare — 9 hücre, en büyük şekil
     case lShape
     case jShape
     case tShape
@@ -74,6 +75,14 @@ extension BlockShape {
         BlockShape(type: .square2x2,
                    offsets: [(0,0),(0,1),(1,0),(1,1)],
                    color: C.colorSquare),
+
+        // 3x3 tam dolu kare — 9 hücre, en büyük ve en yüksek skorlu şekil
+        // Satır+sütun kombinasyonları silerse muazzam combo yapılabilir
+        BlockShape(type: .square3x3,
+                   offsets: [(0,0),(0,1),(0,2),
+                              (1,0),(1,1),(1,2),
+                              (2,0),(2,1),(2,2)],
+                   color: C.colorSquare3),
 
         // L şekli — sağ alt köşeyi doldurur
         BlockShape(type: .lShape,

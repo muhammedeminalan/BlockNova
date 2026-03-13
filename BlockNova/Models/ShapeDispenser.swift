@@ -145,9 +145,10 @@ final class ShapeDispenser {
 
     /// Büyük parça havuzundan seçer. Küçük parça ile aynı olmasın.
     /// Büyük parçalar: 4+ hücreli veya 2D şekiller
+    /// square3x3 de buraya dahil — nadir gelir ama gelince yüksek puan potansiyeli
     private func buyukHavuzdan(kacinilacak: BlockShapeType) -> BlockShapeType {
         let buyukler: [BlockShapeType] = [
-            .square2x2, .lShape, .jShape, .tShape,
+            .square2x2, .square3x3, .lShape, .jShape, .tShape,
             .sShape, .zShape, .horizontal3, .vertical3
         ]
         return tekrarsizSec(from: buyukler, kacinilacaklar: [kacinilacak])
