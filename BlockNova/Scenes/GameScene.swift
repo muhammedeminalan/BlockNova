@@ -78,10 +78,124 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         setupGrid()
         setupTopPanel()
         setupBottomPanel()
-        dealNewPieces()
+
+        // Uygulama arka plana geçince oyun durumunu kaydet
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(oyunuKaydet),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+        // Uygulama kapanınca da kaydet
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(oyunuKaydet),
+            name: UIApplication.willTerminateNotification,
+            object: nil
+        )
+
+        // Kayıtlı oyun varsa yükle, yoksa yeni parçalar dağıt
+        if let kayit = GameSaveManager.shared.yukle() {
+            oyunuGeriYukle(kayit)
+        } else {
+            dealNewPieces()
+        }
 
         // İlk layout safe area'ya göre yapılır
         layoutScene()
+    }
+
+    /// Sahne ekrandan ayrılınca observer'ları temizle — retain cycle ve çift tetikleme önler
+    override func willMove(from view: SKView) {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    // MARK: - Oyun Kaydetme
+
+    /// Mevcut oyun durumunu UserDefaults'a yazar.
+    /// Game over durumunda kayıt yapılmaz — devam edilecek oyun yoktur.
+    @objc func oyunuKaydet() {
+        guard manager.state == .playing else { return }
+
+        // Grid renk datasını [[String?]] formatına dönüştür: dolu hücre hex, boş nil
+        let gridRenkleri: [[String?]] = (0..<C.rows).map { satir in
+            (0..<C.cols).map { sutun in
+                gridNode.cellColors[satir][sutun]?.hexString
+            }
+        }
+
+        // Tepsideki parçaların tip adlarını kaydet
+        let parcaTipleri: [String] = trayPieces.compactMap { $0?.shape.type.rawValue }
+
+        let durum = SavedGameState(
+            score:             manager.score,
+            highScore:         manager.highScore,
+            gridColors:        gridRenkleri,
+            currentPieceTypes: parcaTipleri
+        )
+        GameSaveManager.shared.kaydet(durum)
+    }
+
+    // MARK: - Oyun Geri Yükleme
+
+    /// Kaydedilmiş durumu sahneye uygular: skor, grid ve tepsi parçaları.
+    private func oyunuGeriYukle(_ kayit: SavedGameState) {
+        // Manager'ı kayıtlı skorla senkronize et
+        manager.restoreScore(kayit.score, highScore: kayit.highScore)
+
+        // Skor etiketlerini hemen güncelle
+        scoreValueLabel?.text     = "\(kayit.score)"
+        highScoreValueLabel?.text = "\(kayit.highScore)"
+
+        // Grid hücrelerini renkleriyle doldur — sınır kontrolü: bozuk kayıt için güvenli
+        // UIColor(hex:) optional döndürmez, nil kontrolü hex string üzerinden yapılır
+        for satir in 0..<min(kayit.gridColors.count, C.rows) {
+            let satirVerisi = kayit.gridColors[satir]
+            for sutun in 0..<min(satirVerisi.count, C.cols) {
+                if let hex = satirVerisi[sutun] {
+                    let renk = UIColor(hex: hex)
+                    gridNode.fillCell(row: satir, col: sutun, color: renk)
+                }
+            }
+        }
+
+        // Tepsi parçalarını rawValue → BlockShapeType → BlockShape zinciiriyle yükle
+        let sekiller: [BlockShape] = kayit.currentPieceTypes.compactMap { rawDeger in
+            guard let tip = BlockShapeType(rawValue: rawDeger) else { return nil }
+            return BlockShape.shape(for: tip)
+        }
+
+        if !sekiller.isEmpty {
+            tepsiyeYerlestir(sekiller)
+        } else {
+            // Parça verisi bozuksa yeni dağıt
+            dealNewPieces()
+        }
+    }
+
+    /// Verilen şekilleri tepsi slotlarına yerleştirir.
+    /// dealNewPieces ile aynı mantık — şekiller dışarıdan gelir.
+    private func tepsiyeYerlestir(_ sekiller: [BlockShape]) {
+        let slotGenisligi = C.screenW / 3
+        let ortaY         = safeAreaFrame.minY + C.bottomPanelHeight * 0.50
+
+        for (i, sekil) in sekiller.prefix(3).enumerated() {
+            let parca          = PieceNode(shape: sekil)
+            parca.slotIndex    = i
+            let hedefX         = slotGenisligi * CGFloat(i) + slotGenisligi / 2
+            parca.position     = CGPoint(x: hedefX, y: ortaY)
+            parca.homePosition = parca.position
+            parca.zPosition    = C.zPiece
+            parca.alpha        = 0
+            addChild(parca)
+            trayPieces[i] = parca
+
+            let gecikme = Double(i) * 0.06
+            parca.run(SKAction.sequence([
+                SKAction.wait(forDuration: gecikme),
+                SKAction.fadeIn(withDuration: 0.18)
+            ]))
+        }
     }
 
     // MARK: - Safe Area Güncelleme
@@ -338,6 +452,9 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     // MARK: - Yeniden Başlat
 
     func restartGame() {
+        // Yeni oyun başlayınca kaydı sil — eski durum geçersiz
+        GameSaveManager.shared.sil()
+
         overlayNode?.removeFromParent()
         overlayNode = nil
         trayPieces.forEach { $0?.removeFromParent() }
@@ -442,7 +559,10 @@ extension GameScene: GameManagerDelegate {
         if state == .gameOver {
             HapticManager.notification(.error)
 
-            // Oyun bitince skoru Game Center'a gönder — her bitişte çağrılır, sadece rekorda değil
+            // Game over olunca kaydı sil — devam edilecek oyun kalmadı
+            GameSaveManager.shared.sil()
+
+            // Skoru Game Center'a gönder — her bitişte çağrılır, sadece rekorda değil
             GameManager.submitScore(manager.score)
 
             run(SKAction.wait(forDuration: 0.45)) { [weak self] in

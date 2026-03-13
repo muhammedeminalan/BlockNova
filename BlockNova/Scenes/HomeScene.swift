@@ -1,420 +1,500 @@
 // 📁 Scenes/HomeScene.swift
-// Uygulama acilisinda gosterilen ana menu sahnesi.
-// Logo, dekoratif animasyonlu bloklar, "OYNA" butonu ve rekor skoru icerir.
-// Tum boyutlar scene size + safe area bilgisine gore hesaplanir — responsive tasarim.
+// Uygulama açılışında gösterilen premium ana menü sahnesi.
+// Apple Arcade kalitesinde koyu, modern tasarım.
+// Tüm boyutlar screenW / screenH üzerinden responsive hesaplanır.
 
 import SpriteKit
 import UIKit
 
 // MARK: - HomeScene
+
 final class HomeScene: SKScene, SafeAreaUpdatable {
 
-    // MARK: - Safe Area Durumu
+    // MARK: - Safe Area
 
-    /// Scene icin guncel safe area inset'leri — layout hesaplarinin temel girdisi
+    /// Güncel safe area inset'leri — layout hesaplarında kullanılır
     private var safeAreaInsets: UIEdgeInsets = .zero
-    /// Scene icinde kullanilabilir alan — panellerin ve UI'nin guvenli kalmasi icin
-    private var safeAreaFrame: CGRect = .zero
 
-    // MARK: - Arka Plan Node'lari
+    // MARK: - Node Referansları (layout güncellemeleri için saklanır)
 
-    /// Alt kisimdaki glow katmani — derinlik hissi icin tutulur
-    private var glowNode: SKSpriteNode?
+    /// "BLOCK" yazısı — logo sol parçası
+    private var blockLabel: SKLabelNode?
+    /// "NOVA" yazısı — logo sağ parçası (cyan)
+    private var novaLabel: SKLabelNode?
+    /// "Sürdür · Yerleştir · Patlat" alt tagline
+    private var taglineLabel: SKLabelNode?
 
-    // MARK: - Dekoratif Bloklar
+    /// Skor kartı arka plan shape'i
+    private var scoreCardNode: SKShapeNode?
+    /// "EN YÜKSEK" başlık etiketi
+    private var scoreTitleLabel: SKLabelNode?
+    /// Skor değeri etiketi
+    private var scoreValueLabel: SKLabelNode?
+    /// Kartın üstündeki altın çizgi
+    private var scoreCardLine: SKShapeNode?
 
-    /// Dekoratif bloklar icin layout oranlarini saklar — safe area degisince yeniden konumlanir
-    private var decorativeBlocks: [(node: SKSpriteNode, xRatio: CGFloat, yRatio: CGFloat)] = []
-
-    // MARK: - Logo ve UI
-
-    /// Ana baslik etiketi — layout degisiminde yeniden konumlanir
-    private var titleLabel: SKLabelNode?
-    /// Alt baslik etiketi — layout degisiminde yeniden konumlanir
-    private var subtitleLabel: SKLabelNode?
-    /// Oyna butonu node'u — layout degisiminde boyut/konum guncellenir
+    /// OYNA butonu shape node'u
     private var playButtonNode: SKShapeNode?
-    /// Oyna butonu yazisi — layout degisiminde font/konum guncellenir
+    /// OYNA buton etiketi
     private var playButtonLabel: SKLabelNode?
-    /// Rekor etiketi — layout degisiminde yeniden konumlanir
-    private var highScoreLabel: SKLabelNode?
-    /// Liderlik tablosu butonu — layout degisiminde boyut/konum guncellenir
-    private var leaderboardButtonNode: SKShapeNode?
-    /// Liderlik butonu yazisi — layout degisiminde font/konum guncellenir
-    private var leaderboardButtonLabel: SKLabelNode?
 
-    // MARK: - Kurulum Bayragi
+    /// LİDERLİK butonu shape node'u
+    private var leaderButtonNode: SKShapeNode?
+    /// LİDERLİK buton etiketi
+    private var leaderButtonLabel: SKLabelNode?
 
-    /// Sahneyi bir kere kurmak icin kullanilir — tekrar eden node olusumunu onler
-    private var isSceneSetup: Bool = false
+    /// Versiyon etiketi
+    private var versionLabel: SKLabelNode?
 
-    // MARK: - Sahne Kurulumu
+    /// Sahne bir kez kurulsun — safe area değişince sadece layout güncellenir
+    private var isSetup = false
+
+    // MARK: - Sahne Girişi
 
     override func didMove(to view: SKView) {
-        // Arka plan koyu renk — bloklar ve metinler one ciksin
-        backgroundColor = C.bgColor.sk
-
-        // Scene size bilgisi merkezi hesaplar icin guncellenir
+        // Arka plan rengini en koyu lacivert yap — diğer katmanlar üstüne biner
+        backgroundColor = UIColor(hex: "#0a0a1a")
         C.updateSceneSize(size)
-
-        // Safe area bilgisini view'dan al — ilk layout icin baz deger olur
         safeAreaInsets = view.safeAreaInsets
 
-        // Sahne kurulumunu sadece bir kez yap
-        if !isSceneSetup {
-            setupBackground()
-            setupDecorativeBlocks()
-            setupLogo()
-            setupPlayButton()
-            setupLeaderboardButton()  // Liderlik butonu OYNA butonunun hemen altına eklenir
-            setupHighScoreLabel()
-            isSceneSetup = true
+        if !isSetup {
+            kurgula()
+            isSetup = true
         }
-
-        // Safe area bilgisine gore tum node konumlarini guncelle
         layoutScene()
     }
 
-    // MARK: - Safe Area Guncelleme
+    // MARK: - Safe Area Güncellemesi
 
-    /// GameViewController'dan gelen safe area inset'lerini alir ve layout'u yeniler
+    /// GameViewController'dan gelen inset değişikliğini alır, layout'u yeniler
     func updateSafeAreaInsets(_ insets: UIEdgeInsets) {
-        // Insets saklanir — layout hesaplarinin temel girdisi
         safeAreaInsets = insets
-        // Insets degisince layout yeniden hesaplanir
         layoutScene()
     }
 
-    // MARK: - Layout
+    // MARK: - Ana Kurulum
 
-    /// Tum node'lari safe area'ya gore yeniden konumlandirir
-    private func layoutScene() {
-        // Scene size degisimi olursa merkez hesaplar guncellensin
-        C.updateSceneSize(size)
-
-        // Safe area frame hesapla — ust/alt/yan guvenli alanlari dikkate al
-        let safeWidth  = max(0, size.width  - safeAreaInsets.left - safeAreaInsets.right)
-        let safeHeight = max(0, size.height - safeAreaInsets.top  - safeAreaInsets.bottom)
-        safeAreaFrame = CGRect(
-            x: safeAreaInsets.left,
-            y: safeAreaInsets.bottom,
-            width: safeWidth,
-            height: safeHeight
-        )
-
-        // Arka plan glow boyutu ve konumu safe area'ya gore guncellenir
-        if let glowNode {
-            glowNode.size = CGSize(width: size.width * 1.5, height: size.height * 0.5)
-            glowNode.position = CGPoint(
-                x: size.width / 2,
-                y: safeAreaFrame.minY + safeAreaFrame.height * 0.15
-            )
-        }
-
-        // Dekoratif bloklar safe area icinde kalacak sekilde yeniden konumlanir
-        layoutDecorativeBlocks()
-
-        // Logo konumu safe area merkezine gore ayarlanir
-        if let titleLabel {
-            titleLabel.fontSize = C.screenH * 0.055
-            titleLabel.position = CGPoint(
-                x: safeAreaFrame.midX,
-                y: safeAreaFrame.minY + safeAreaFrame.height * 0.74
-            )
-        }
-        if let subtitleLabel {
-            subtitleLabel.fontSize = C.screenH * 0.020
-            subtitleLabel.position = CGPoint(
-                x: safeAreaFrame.midX,
-                y: safeAreaFrame.minY + safeAreaFrame.height * 0.74 - C.screenH * 0.055
-            )
-        }
-
-        // Oyna butonunun boyutu ve konumu safe area'ya gore ayarlanir
-        layoutPlayButton()
-
-        // Liderlik butonu OYNA butonunun altında konumlanir
-        layoutLeaderboardButton()
-
-        // Rekor etiketi liderlik butonunun altinda sabitlenir
-        if let highScoreLabel {
-            highScoreLabel.fontSize = C.screenH * 0.020
-            let btnY = safeAreaFrame.minY + safeAreaFrame.height * 0.38
-            let btnH = C.screenH * 0.072
-            // Liderlik butonu da alta eklendi — rekor etiketi daha asagiya iner
-            let margin = C.screenH * 0.028 + btnH + C.screenH * 0.018
-            highScoreLabel.position = CGPoint(
-                x: safeAreaFrame.midX,
-                y: btnY - btnH - margin
-            )
-        }
-    }
-
-    /// Dekoratif bloklarin pozisyonlarini safe area'ya gore ayarlar
-    private func layoutDecorativeBlocks() {
-        // Dekoratif blok yoksa gereksiz is yapma
-        guard !decorativeBlocks.isEmpty else { return }
-
-        // Blok boyutu scene genisligine gore responsive kalir
-        let blockSize = C.cellSize * 0.9
-
-        // Her blok kendi oranina gore yeni konuma tasinir
-        for item in decorativeBlocks {
-            item.node.size = CGSize(width: blockSize, height: blockSize)
-            let x = safeAreaFrame.minX + item.xRatio * safeAreaFrame.width
-            let y = safeAreaFrame.minY + item.yRatio * safeAreaFrame.height
-            item.node.position = CGPoint(x: x, y: y)
-        }
-    }
-
-    /// Liderlik butonunun boyut ve pozisyonunu gunceller — OYNA butonunun hemen altina konumlanir
-    private func layoutLeaderboardButton() {
-        guard let leaderboardButtonNode else { return }
-
-        // Buton boyutlari OYNA butonu ile eslesir — tutarli UI
-        let btnW = C.screenW * 0.52
-        let btnH = C.screenH * 0.072
-        // OYNA buton Y degeri — liderlik butonu bunun hemen altina gider
-        let playBtnY = safeAreaFrame.minY + safeAreaFrame.height * 0.38
-        let spacing  = C.screenH * 0.018  // Butonlar arasi bosluk
-        let btnY     = playBtnY - btnH - spacing
-
-        // Rounded rect path guncelle — SKShapeNode boyutu path ile kontrol edilir
-        let rect = CGRect(x: -btnW / 2, y: -btnH / 2, width: btnW, height: btnH)
-        leaderboardButtonNode.path = CGPath(
-            roundedRect: rect,
-            cornerWidth: btnH / 2,
-            cornerHeight: btnH / 2,
-            transform: nil
-        )
-        leaderboardButtonNode.position = CGPoint(x: safeAreaFrame.midX, y: btnY)
-
-        // Buton yazisi font boyutu ve ortasi guncellenir
-        if let leaderboardButtonLabel {
-            leaderboardButtonLabel.fontSize = C.screenH * 0.030
-            leaderboardButtonLabel.position = .zero
-        }
-    }
-
-    /// Oyna butonunun boyut ve pozisyonunu gunceller
-    private func layoutPlayButton() {
-        guard let playButtonNode else { return }
-
-        // Buton boyutlari scene boyutuna gore responsive kalir
-        let btnW = C.screenW * 0.52
-        let btnH = C.screenH * 0.072
-        let btnY = safeAreaFrame.minY + safeAreaFrame.height * 0.38
-
-        // Rounded rect path guncelle — SKShapeNode boyutu path ile kontrol edilir
-        let rect = CGRect(x: -btnW / 2, y: -btnH / 2, width: btnW, height: btnH)
-        playButtonNode.path = CGPath(
-            roundedRect: rect,
-            cornerWidth: btnH / 2,
-            cornerHeight: btnH / 2,
-            transform: nil
-        )
-        playButtonNode.position = CGPoint(x: safeAreaFrame.midX, y: btnY)
-
-        // Buton yazisi font boyutu ve ortasi guncellenir
-        if let playButtonLabel {
-            playButtonLabel.fontSize = C.screenH * 0.030
-            playButtonLabel.position = .zero
-        }
+    /// Tüm node'ları oluşturur. Sadece bir kez çağrılır.
+    private func kurgula() {
+        kurgulaArkaplan()
+        kurgulaHareketliBloklar()
+        kurgulaLogo()
+        kurgulaSkorkart()
+        kurgulaOynaButonu()
+        kurgulaLiderlikButonu()
+        kurgulaVersiyon()
+        girisAnimasyonu()
     }
 
     // MARK: - Arka Plan
 
-    /// Koyu gradient hissi icin arka plana hafif bir dekoratif katman ekler
-    private func setupBackground() {
-        // Alt kisma hafif parlama efekti — derinlik icin
-        let glow = SKSpriteNode(
-            color: UIColor(red: 0.15, green: 0.15, blue: 0.35, alpha: 0.4).sk,
-            size: CGSize(width: C.screenW * 1.5, height: C.screenH * 0.5)
-        )
-        glow.zPosition = C.zBackground
-        addChild(glow)
-        glowNode = glow
+    /// İki katmanlı gradient simülasyonu:
+    /// Alt katman çok koyu, üst katman biraz daha açık + yarı saydam.
+    /// Bu iki ton derinlik ve premium his verir.
+    private func kurgulaArkaplan() {
+        // Alt gradient katmanı — ekranı tamamen kaplar, koyu ton
+        let alt = SKSpriteNode(color: UIColor(hex: "#0f0f2e"), size: CGSize(width: C.screenW, height: C.screenH))
+        alt.position  = CGPoint(x: C.screenW / 2, y: C.screenH / 2)
+        alt.zPosition = C.zBackground
+        alt.alpha     = 0.5  // Biraz saydam: alttaki koyu renk görünsün, karışım gradient etkisi yaratır
+        addChild(alt)
     }
 
-    // MARK: - Dekoratif Bloklar
+    // MARK: - Hareketli Blok Arka Planı
 
-    /// Arka planda yuzen renkli bloklar — gorsel zenginlik, oyunun tadini verir
-    private func setupDecorativeBlocks() {
-        let colors: [UIColor] = [
+    /// 22 adet küçük yuvarlak kare — yavaş yukarı kayarak sonsuz döngüde hareket eder.
+    /// Alpha düşük tutulur: dikkat çekmeden canlılık katar.
+    private func kurgulaHareketliBloklar() {
+        // Oyunun kendi blok renkleri kullanılır — tema bütünlüğü için
+        let renkler: [UIColor] = [
             C.colorSingle, C.colorH2, C.colorH3,
-            C.colorV2, C.colorV3, C.colorSquare,
-            C.colorL, C.colorJ
+            C.colorV2,     C.colorV3, C.colorSquare,
+            C.colorL,      C.colorJ,  C.colorT,
+            C.colorS,      C.colorZ
         ]
 
-        // Drift miktarlari ekran boyutuna gore — sabit px kullanilmaz
-        let driftXRange = C.screenW * 0.06
-        let driftYRange = C.screenH * 0.05
+        for i in 0..<22 {
+            // Her blok rastgele boyut — 28...52 arası
+            let boyut = CGFloat.random(in: 28...52)
+            // Rengi döngüsel seç — her renk birden fazla blokta kullanılabilir
+            let renk  = renkler[i % renkler.count].withAlphaComponent(CGFloat.random(in: 0.12...0.22))
 
-        for (i, color) in colors.enumerated() {
-            let cell = SKSpriteNode(
-                color: color.withAlphaComponent(0.30).sk,
-                size: CGSize(width: C.cellSize * 0.9, height: C.cellSize * 0.9)
-            )
-            cell.zPosition = C.zBackground + 0.5
-            addChild(cell)
+            let blok = SKSpriteNode(color: renk.sk, size: CGSize(width: boyut, height: boyut))
+            // Yuvarlak görünüm: SKSpriteNode'un köşelerini yumuşatmak için
+            // maskNode ile yuvarlatma yerine küçük overlay tekniği — çözüm: texture yok,
+            // basit çözüm olarak alpha blend ile köşe hissi verilir (bloklar küçük ve uzakta)
+            blok.zPosition = C.zBackground + 0.5
 
-            // Safe area icinde rastgele oranlar — layout yeniden hesaplaninca ayni oranda kalir
-            let xRatio = CGFloat.random(in: 0.08...0.92)
-            let yRatio = CGFloat.random(in: 0.28...0.70)
-            decorativeBlocks.append((node: cell, xRatio: xRatio, yRatio: yRatio))
+            // Ekrana rastgele dağıt — hem X hem Y tamamen rasgele
+            let baslangicX = CGFloat.random(in: 0...C.screenW)
+            let baslangicY = CGFloat.random(in: -C.screenH * 0.1 ... C.screenH * 1.1)
+            blok.position  = CGPoint(x: baslangicX, y: baslangicY)
 
-            // Her blok kendi ritmiyle hareket eder — kaotik degil, rahat
-            let delay    = Double(i) * 0.35
-            let dur      = Double.random(in: 3.5...6.0)
-            let driftX   = CGFloat.random(in: -driftXRange...driftXRange)
-            let driftY   = CGFloat.random(in: -driftYRange...driftYRange)
-            let drift     = SKAction.moveBy(x: driftX, y: driftY, duration: dur)
-            let driftBack = drift.reversed()
-            let rotate    = SKAction.rotate(byAngle: .pi / 5, duration: dur)
-            let rotBack   = rotate.reversed()
+            addChild(blok)
 
-            let loop = SKAction.repeatForever(SKAction.sequence([
-                SKAction.wait(forDuration: delay),
-                SKAction.group([
-                    SKAction.repeatForever(SKAction.sequence([drift, driftBack])),
-                    SKAction.repeatForever(SKAction.sequence([rotate, rotBack]))
-                ])
-            ]))
-            cell.run(loop)
+            // Yukarı hareket: yavaş, 12-22 saniyede ekranı baştan sona geçer
+            let yukariHareket = SKAction.moveBy(x: 0, y: C.screenH * 1.2, duration: Double.random(in: 12...22))
+            // Ekran üstüne çıkınca anında alta sıfırla — kesintisiz döngü
+            let sifirla        = SKAction.moveBy(x: 0, y: -C.screenH * 1.2, duration: 0)
+            let dongü          = SKAction.repeatForever(SKAction.sequence([yukariHareket, sifirla]))
+            blok.run(dongü)
+
+            // Hafif sallanma rotasyonu — robotik değil, organik his
+            let donusMiktari = CGFloat.random(in: -0.3...0.3)
+            let donus        = SKAction.rotate(byAngle: .pi * donusMiktari, duration: Double.random(in: 8...16))
+            blok.run(SKAction.repeatForever(SKAction.sequence([donus, donus.reversed()])))
         }
     }
 
     // MARK: - Logo
 
-    /// Oyun basligi — ekranin ust %75'ine konumlandirilir
-    private func setupLogo() {
-        // Ana baslik
-        let title = SKLabelNode(fontNamed: C.fontBold)
-        title.text      = "BLOCK NOVA"
-        title.fontSize  = C.screenH * 0.055
-        title.fontColor = .white
-        title.zPosition = C.zUI
-        addChild(title)
-        titleLabel = title
+    /// "BLOCK NOVA" iki ayrı label yan yana.
+    /// "BLOCK" sağa hizalı, "NOVA" sola hizalı — ikisi ekran ortasında buluşur.
+    /// Font boyutu min(screenW, screenH) ile hesaplanır: dar veya geniş cihazda taşmaz.
+    private func kurgulaLogo() {
+        // "BLOCK" — horizontalAlignmentMode .right: metnin sağ kenarı pivot noktasında
+        // Bu sayede X pozisyonu = merkez - boşluk olarak ayarlanınca sol tarafa doğru oturur
+        let block = SKLabelNode(fontNamed: "AvenirNext-Heavy")
+        block.text                    = "BLOCK"
+        block.fontSize                = logoFontBoyutu()
+        block.fontColor               = .white
+        block.horizontalAlignmentMode = .right   // Sağ kenar pivot — merkeze yasla
+        block.verticalAlignmentMode   = .baseline
+        block.zPosition               = C.zUI
+        block.alpha                   = 0
+        block.name                    = "logoBlock"
+        addChild(block)
+        blockLabel = block
 
-        // Hafif sallanma — logo canli gorunsun
-        let wobble = SKAction.repeatForever(SKAction.sequence([
-            SKAction.rotate(byAngle:  0.025, duration: 0.9),
-            SKAction.rotate(byAngle: -0.025, duration: 0.9)
-        ]))
-        title.run(wobble)
+        // "NOVA" — horizontalAlignmentMode .left: metnin sol kenarı pivot noktasında
+        let nova = SKLabelNode(fontNamed: "AvenirNext-Heavy")
+        nova.text                    = "NOVA"
+        nova.fontSize                = logoFontBoyutu()
+        nova.fontColor               = UIColor(hex: "#00D4FF")
+        nova.horizontalAlignmentMode = .left     // Sol kenar pivot — merkeze yasla
+        nova.verticalAlignmentMode   = .baseline
+        nova.zPosition               = C.zUI
+        nova.alpha                   = 0
+        nova.name                    = "logoNova"
+        addChild(nova)
+        novaLabel = nova
 
-        // Alt yazi
-        let sub = SKLabelNode(fontNamed: C.fontMedium)
-        sub.text      = "Surdur. Yerlestir. Patlat!"
-        sub.fontSize  = C.screenH * 0.020
-        sub.fontColor = UIColor.white.withAlphaComponent(0.55).sk
-        sub.zPosition = C.zUI
-        addChild(sub)
-        subtitleLabel = sub
+        // Tagline — "Sürdür · Yerleştir · Patlat"
+        let tagline = SKLabelNode(fontNamed: "AvenirNext-Medium")
+        tagline.text                    = "Sürdür · Yerleştir · Patlat"
+        tagline.fontSize                = taglineFontBoyutu()
+        tagline.fontColor               = UIColor.white.withAlphaComponent(0.5)
+        tagline.horizontalAlignmentMode = .center
+        tagline.verticalAlignmentMode   = .baseline
+        tagline.zPosition               = C.zUI
+        tagline.alpha                   = 0
+        addChild(tagline)
+        taglineLabel = tagline
     }
 
-    // MARK: - Oyna Butonu
+    // MARK: - Responsive Font Hesaplamaları
 
-    /// Yesil rounded buton — ekranin %38'ine konumlandirilir
-    private func setupPlayButton() {
-        // Buton arka plani
-        let rect = CGRect(x: -1, y: -1, width: 2, height: 2)
-        let btn  = SKShapeNode(rect: rect, cornerRadius: 1)
-        btn.fillColor   = UIColor(hex: "#00c853").sk
+    /// Logo font boyutu: screenW ve screenH'nin küçüğünün %12'si.
+    /// Bu oran iPhone SE'den iPad'e kadar tüm cihazlarda güvenli sığar.
+    private func logoFontBoyutu() -> CGFloat {
+        return min(C.screenW, C.screenH) * 0.12
+    }
+
+    /// Tagline font boyutu: logo ile orantılı, çok küçük veya büyük olmaz.
+    private func taglineFontBoyutu() -> CGFloat {
+        return min(C.screenW, C.screenH) * 0.032
+    }
+
+    // MARK: - Skor Kartı
+
+    /// Altın çizgi + koyu panel + başlık + değer.
+    /// Önceki oyundan kalan en yüksek skoru gösterir.
+    /// Başlık üstte küçük, değer altta büyük — dikey düzen, taşma yok.
+    private func kurgulaSkorkart() {
+        let kartW = C.screenW * 0.72
+        let kartH = C.screenH * 0.13  // Yeterince yüksek: büyük rakam + başlık sığsın
+
+        // Kart arka planı: rounded rect shape
+        let kartRect = CGRect(x: -kartW / 2, y: -kartH / 2, width: kartW, height: kartH)
+        let kart     = SKShapeNode(rect: kartRect, cornerRadius: 20)
+        kart.fillColor   = UIColor(hex: "#1a1a3e").withAlphaComponent(0.85).sk
+        kart.strokeColor = UIColor.white.withAlphaComponent(0.08).sk
+        kart.lineWidth   = 1
+        kart.zPosition   = C.zUI
+        kart.alpha       = 0  // Giriş animasyonu
+        addChild(kart)
+        scoreCardNode = kart
+
+        // Kartın üstündeki altın ince çizgi — kartın top edge'inde
+        let cizgiPath = CGMutablePath()
+        cizgiPath.move(to:    CGPoint(x: -kartW / 2, y: kartH / 2))
+        cizgiPath.addLine(to: CGPoint(x:  kartW / 2, y: kartH / 2))
+        let cizgi     = SKShapeNode(path: cizgiPath)
+        cizgi.strokeColor = UIColor(hex: "#FFD700").withAlphaComponent(0.5).sk
+        cizgi.lineWidth   = 1.5
+        cizgi.zPosition   = C.zUI + 0.1
+        kart.addChild(cizgi)
+        scoreCardLine = cizgi
+
+        // "EN YÜKSEK" başlık — kartın üst bölümünde ortalı, küçük altın yazı
+        let baslik = SKLabelNode(fontNamed: "AvenirNext-Medium")
+        baslik.text                    = "EN YÜKSEK"
+        baslik.fontSize                = C.screenH * 0.016
+        baslik.fontColor               = UIColor(hex: "#FFD700").sk
+        baslik.horizontalAlignmentMode = .center
+        baslik.verticalAlignmentMode   = .baseline
+        // Kartın dikey ortasının biraz üstüne — başlık üstte, rakam altta
+        baslik.position  = CGPoint(x: 0, y: kartH * 0.12)
+        baslik.zPosition = 1
+        kart.addChild(baslik)
+        scoreTitleLabel = baslik
+
+        // Skor değeri — başlığın altında, ortalı, büyük beyaz rakam
+        let hs = UserDefaults.standard.integer(forKey: C.highScoreKey)
+        let deger = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        deger.text                    = "\(hs)"
+        deger.fontSize                = C.screenH * 0.042
+        deger.fontColor               = .white
+        deger.horizontalAlignmentMode = .center
+        deger.verticalAlignmentMode   = .top
+        // Başlığın hemen altına yerleşir — dikey hizalama ile taşma önlenir
+        deger.position  = CGPoint(x: 0, y: kartH * 0.08)
+        deger.zPosition = 1
+        kart.addChild(deger)
+        scoreValueLabel = deger
+    }
+
+    // MARK: - OYNA Butonu
+
+    /// Büyük yeşil oval buton — en belirgin eylem çağrısı.
+    /// Üstünde beyaz highlight ile cam efekti.
+    private func kurgulaOynaButonu() {
+        let btnW = C.screenW * 0.72
+        let btnH = C.screenH * 0.075
+
+        let rect = CGRect(x: -btnW / 2, y: -btnH / 2, width: btnW, height: btnH)
+        let btn  = SKShapeNode(rect: rect, cornerRadius: btnH / 2)
+        btn.fillColor   = UIColor(hex: "#00C853").sk  // Parlak yeşil
         btn.strokeColor = .clear
         btn.zPosition   = C.zUI
-        btn.name        = "playButton"
+        btn.name        = "oynaBtn"
+        btn.alpha       = 0  // Giriş animasyonu
         addChild(btn)
         playButtonNode = btn
 
-        // Buton yazisi
-        let lbl = SKLabelNode(fontNamed: C.fontBold)
+        // Üst beyaz highlight — glass morphism hissi
+        // Butonun üst yarısını kaplar, yarı saydam
+        let glassW = btnW * 0.92
+        let glassH = btnH * 0.42
+        let glassRect  = CGRect(x: -glassW / 2, y: 0, width: glassW, height: glassH)
+        let glassShape = SKShapeNode(rect: glassRect, cornerRadius: btnH / 2)
+        glassShape.fillColor   = UIColor.white.withAlphaComponent(0.15).sk
+        glassShape.strokeColor = .clear
+        glassShape.zPosition   = 0.5
+        glassShape.name        = "oynaBtn"  // Dokunma tespiti için aynı isim
+        btn.addChild(glassShape)
+
+        // "OYNA" yazısı
+        let lbl = SKLabelNode(fontNamed: "AvenirNext-Heavy")
         lbl.text                  = "OYNA"
-        lbl.fontSize              = C.screenH * 0.030
+        lbl.fontSize              = C.screenH * 0.028
         lbl.fontColor             = .white
         lbl.verticalAlignmentMode = .center
-        lbl.name                  = "playButton"
+        lbl.zPosition             = 1
+        lbl.name                  = "oynaBtn"  // Dokunma tespiti için aynı isim
         btn.addChild(lbl)
         playButtonLabel = lbl
-
-        // Pulse animasyonu — "tikla beni" cagrisi
-        let pulse = SKAction.repeatForever(SKAction.sequence([
-            SKAction.scale(to: 1.055, duration: 0.75),
-            SKAction.scale(to: 1.000, duration: 0.75)
-        ]))
-        btn.run(pulse)
     }
 
-    // MARK: - Liderlik Tablosu Butonu
+    // MARK: - LİDERLİK Butonu
 
-    /// Mavi tonda rounded buton — OYNA butonuyla uyumlu stil
-    private func setupLeaderboardButton() {
-        // Buton arka plani — mavi ton kullanilir: oyundan farkli ama uyumlu
-        let rect = CGRect(x: -1, y: -1, width: 2, height: 2)
-        let btn  = SKShapeNode(rect: rect, cornerRadius: 1)
-        btn.fillColor   = UIColor(hex: "#1565c0").sk  // Koyu mavi — yesilden ayirt eder
-        btn.strokeColor = .clear
+    /// Şeffaf arka plan, cyan border — ikincil eylem görünümü.
+    /// Emoji kullanılmaz: SKLabelNode'da emoji+font karışımı render sorununa yol açar.
+    private func kurgulaLiderlikButonu() {
+        let btnW = C.screenW * 0.60
+        let btnH = C.screenH * 0.062
+
+        let rect = CGRect(x: -btnW / 2, y: -btnH / 2, width: btnW, height: btnH)
+        let btn  = SKShapeNode(rect: rect, cornerRadius: btnH / 2)
+        btn.fillColor   = UIColor(hex: "#00D4FF").withAlphaComponent(0.08).sk  // Çok hafif cyan dolgu
+        btn.strokeColor = UIColor(hex: "#00D4FF").sk  // Cyan border
+        btn.lineWidth   = 1.5
         btn.zPosition   = C.zUI
-        btn.name        = "leaderboardButton"
+        btn.name        = "liderlikBtn"
+        btn.alpha       = 0  // Giriş animasyonu
         addChild(btn)
-        leaderboardButtonNode = btn
+        leaderButtonNode = btn
 
-        // Buton yazisi
-        let lbl = SKLabelNode(fontNamed: C.fontBold)
-        lbl.text                  = "LIDERLIK"
-        lbl.fontSize              = C.screenH * 0.030
-        lbl.fontColor             = .white
+        // "LIDERLIK TABLOSU" — sade metin, taşma yok
+        let lbl = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        lbl.text                  = "LIDERLIK TABLOSU"
+        lbl.fontSize              = C.screenH * 0.020
+        lbl.fontColor             = UIColor(hex: "#00D4FF").sk
         lbl.verticalAlignmentMode = .center
-        lbl.name                  = "leaderboardButton"
+        lbl.zPosition             = 1
+        lbl.name                  = "liderlikBtn"  // Dokunma tespiti için aynı isim
         btn.addChild(lbl)
-        leaderboardButtonLabel = lbl
+        leaderButtonLabel = lbl
     }
 
-    // MARK: - Rekor Etiketi
+    // MARK: - Versiyon Etiketi
 
-    /// Kaydedilmis en yuksek skoru gosterir
-    private func setupHighScoreLabel() {
-        let hs = UserDefaults.standard.integer(forKey: C.highScoreKey)
-        let lbl = SKLabelNode(fontNamed: C.fontMedium)
-        lbl.text      = "EN YUKSEK: \(hs)"
-        lbl.fontSize  = C.screenH * 0.020
-        lbl.fontColor = C.goldColor.sk
+    /// Ekranın en altında, neredeyse görünmez — sadece çok yakın bakılınca fark edilir
+    private func kurgulaVersiyon() {
+        let lbl = SKLabelNode(fontNamed: "AvenirNext-Medium")
+        lbl.text      = "v1.0"
+        lbl.fontSize  = C.screenH * 0.014
+        lbl.fontColor = UIColor.white.withAlphaComponent(0.2)
         lbl.zPosition = C.zUI
         addChild(lbl)
-        highScoreLabel = lbl
+        versionLabel = lbl
     }
 
-    // MARK: - Dokunus
+    // MARK: - Layout
+
+    /// Tüm node'ların pozisyonunu safe area + ekran boyutuna göre günceller.
+    /// Hem ilk kurulumda hem safe area değişiminde çağrılır.
+    private func layoutScene() {
+        C.updateSceneSize(size)
+
+        // Logo konumlandırması:
+        // BLOCK .right hizalı → X = merkez - yarı boşluk (metnin sağ kenarı ortada)
+        // NOVA  .left  hizalı → X = merkez + yarı boşluk (metnin sol kenarı ortada)
+        // İkisi ortada buluşur, aralarında sabit boşluk — genişlik hesabı gerekmez.
+        let logoY      = C.screenH * 0.72
+        let yariBosluk = C.screenW * 0.018  // İki kelime arasının yarısı
+        let fontBoyutu = logoFontBoyutu()
+
+        if let block = blockLabel {
+            block.fontSize = fontBoyutu
+            block.position = CGPoint(x: C.screenW / 2 - yariBosluk, y: logoY)
+        }
+        if let nova = novaLabel {
+            nova.fontSize  = fontBoyutu
+            nova.position  = CGPoint(x: C.screenW / 2 + yariBosluk, y: logoY)
+        }
+
+        // Tagline: logodan aşağı, font boyutuyla orantılı mesafe
+        if let tagline = taglineLabel {
+            tagline.fontSize = taglineFontBoyutu()
+            tagline.position = CGPoint(x: C.screenW / 2, y: logoY - fontBoyutu * 1.15)
+        }
+
+        // Skor kartı: orta band
+        if let kart = scoreCardNode {
+            kart.position = CGPoint(x: C.screenW / 2, y: C.screenH * 0.50)
+        }
+
+        // OYNA butonu
+        if let btn = playButtonNode {
+            btn.position = CGPoint(x: C.screenW / 2, y: C.screenH * 0.38)
+        }
+
+        // LİDERLİK butonu
+        if let btn = leaderButtonNode {
+            btn.position = CGPoint(x: C.screenW / 2, y: C.screenH * 0.28)
+        }
+
+        // Versiyon etiketi — en altta
+        if let lbl = versionLabel {
+            lbl.position = CGPoint(x: C.screenW / 2, y: C.screenH * 0.04)
+        }
+    }
+
+    // MARK: - Giriş Animasyonu
+
+    /// Ekran açılınca elementler sırayla görünür.
+    /// Önce logo yukarıdan düşer, sonra diğerleri fade ile belirir.
+    private func girisAnimasyonu() {
+        // Logo: 40pt yukarıdan düşer, eş zamanlı fade in
+        // Önce Y'yi 40 arttır (yukarıda başlasın), sonra aşağı indir
+        let logoDus = SKAction.sequence([
+            SKAction.moveBy(x: 0, y: 40, duration: 0),
+            SKAction.group([
+                SKAction.moveBy(x: 0, y: -40, duration: 0.5),
+                SKAction.fadeIn(withDuration: 0.5)
+            ])
+        ])
+        blockLabel?.run(logoDus)
+        novaLabel?.run(logoDus)
+        taglineLabel?.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.15),
+            SKAction.fadeIn(withDuration: 0.5)
+        ]))
+
+        // Skor kartı: 0.2 saniye gecikme, 0.4 saniye fade
+        scoreCardNode?.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.2),
+            SKAction.fadeIn(withDuration: 0.4)
+        ]))
+
+        // OYNA butonu: 0.4 saniye sonra fade + scale
+        // Küçükten büyüğe büyüyerek belirir — dikkat çeker
+        playButtonNode?.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.4),
+            SKAction.group([
+                SKAction.fadeIn(withDuration: 0.35),
+                SKAction.sequence([
+                    SKAction.scale(to: 0.9, duration: 0),
+                    SKAction.scale(to: 1.0, duration: 0.35)
+                ])
+            ])
+        ]))
+
+        // LİDERLİK butonu: en son belirir
+        leaderButtonNode?.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.55),
+            SKAction.fadeIn(withDuration: 0.3)
+        ]))
+
+        // Versiyon: en son, sessizce
+        versionLabel?.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.7),
+            SKAction.fadeIn(withDuration: 0.4)
+        ]))
+    }
+
+    // MARK: - Dokunma Algılama
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
-        let loc  = touch.location(in: self)
-        let node = atPoint(loc)
+        let location = touch.location(in: self)
+        let node     = atPoint(location)
 
-        // Butonun kendisi veya icindeki label'a dokunulmus olabilir
-        if node.name == "playButton" || node.parent?.name == "playButton" {
-            // Haptic: menuden oyuna gecis hissi
-            HapticManager.selectionChanged()
-            goToGame()
-        }
+        // OYNA butonuna basıldı
+        if node.name == "oynaBtn" || node.parent?.name == "oynaBtn" {
+            HapticManager.impact(.medium)
 
-        // Liderlik butonuna dokunulursa Game Center ekrani ac
-        if node.name == "leaderboardButton" || node.parent?.name == "leaderboardButton" {
-            HapticManager.selectionChanged()
-            // rootViewController üzerinden GKGameCenterViewController sunulur
-            if let rootVC = view?.window?.rootViewController {
-                GameManager.showLeaderboard(from: rootVC)
+            // Butonu bul: node veya parent SKShapeNode olabilir
+            let hedefNode: SKNode = (node.name == "oynaBtn") ? node : (node.parent ?? node)
+
+            // Bastı hissi: hafifçe küçül, geri dön, sonra sahneye geç
+            let basAnimasyon = SKAction.sequence([
+                SKAction.scale(to: 0.95, duration: 0.08),
+                SKAction.scale(to: 1.0,  duration: 0.08)
+            ])
+            hedefNode.run(basAnimasyon) { [weak self] in
+                guard let self = self else { return }
+                let scene       = GameScene(size: self.size)
+                scene.scaleMode = self.scaleMode
+                self.view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.4))
             }
         }
+
+        // LİDERLİK butonuna basıldı
+        if node.name == "liderlikBtn" || node.parent?.name == "liderlikBtn" {
+            HapticManager.impact(.light)
+
+            // Border: basınca beyazlaşır, geri döner — tıklandığına dair görsel feedback
+            if let btn = leaderButtonNode {
+                let beyazlas  = SKAction.run { btn.strokeColor = SKColor.white }
+                let gereDon    = SKAction.run { btn.strokeColor = UIColor(hex: "#00D4FF").sk }
+                btn.run(SKAction.sequence([beyazlas, SKAction.wait(forDuration: 0.18), gereDon]))
+            }
+
+            guard let vc = self.view?.window?.rootViewController else { return }
+            GameManager.showLeaderboard(from: vc)
+        }
     }
 
-    // MARK: - Sahne Gecisi
-
-    /// GameScene'e fade gecisiyle gecer
-    private func goToGame() {
-        let game = GameScene(size: size)
-        game.scaleMode = scaleMode
-        view?.presentScene(game, transition: SKTransition.fade(withDuration: 0.4))
-    }
 }

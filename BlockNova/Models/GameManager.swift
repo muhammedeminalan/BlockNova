@@ -94,6 +94,19 @@ final class GameManager {
         // highScore korunur — oyun bitmeden silmek yanlış olur
     }
 
+    /// Kaydedilmiş oyundan geri yüklenince çağrılır.
+    /// private score/highScore değerlerini dışarıdan set etmenin tek yolu.
+    func restoreScore(_ savedScore: Int, highScore savedHighScore: Int) {
+        score = savedScore
+        // highScore küçülmez — UserDefaults'taki değer baz alınır
+        if savedHighScore > highScore {
+            highScore = savedHighScore
+            UserDefaults.standard.set(highScore, forKey: C.highScoreKey)
+        }
+        // Delegate'e bildir: skor etiketleri hemen güncellenir
+        delegate?.didUpdateScore(score, highScore: highScore, isNewRecord: false)
+    }
+
     // MARK: - Game Center Entegrasyonu
 
     /// Game Center'a kullanıcı girişini başlatır.

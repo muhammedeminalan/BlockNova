@@ -7,19 +7,20 @@
 import UIKit
 
 // MARK: - Şekil Tipleri
-enum BlockShapeType: CaseIterable {
-    case single
-    case horizontal2
-    case horizontal3
-    case vertical2
-    case vertical3
-    case square2x2
-    case square3x3  // 3x3 tam kare — 9 hücre, en büyük şekil
-    case lShape
-    case jShape
-    case tShape
-    case sShape
-    case zShape
+// String rawValue eklendi — GameSaveManager'da JSON serileştirme için gerekli
+enum BlockShapeType: String, CaseIterable {
+    case single      = "single"
+    case horizontal2 = "horizontal2"
+    case horizontal3 = "horizontal3"
+    case vertical2   = "vertical2"
+    case vertical3   = "vertical3"
+    case square2x2   = "square2x2"
+    case square3x3   = "square3x3"  // 3x3 tam kare — 9 hücre, en büyük şekil
+    case lShape      = "lShape"
+    case jShape      = "jShape"
+    case tShape      = "tShape"
+    case sShape      = "sShape"
+    case zShape      = "zShape"
 }
 
 // MARK: - BlockShape Modeli
