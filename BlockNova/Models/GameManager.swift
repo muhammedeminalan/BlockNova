@@ -4,6 +4,8 @@
 // Delegate pattern ile GameScene'e bildirim gönderir.
 
 import Foundation
+import UIKit    // UIViewController parametresi için gerekli
+import GameKit  // Game Center servisleri için gerekli
 
 // MARK: - Oyun Durumu
 enum GameState {
@@ -90,6 +92,60 @@ final class GameManager {
         state = .playing
         newRecordAchieved = false
         // highScore korunur — oyun bitmeden silmek yanlış olur
+    }
+
+    // MARK: - Game Center Entegrasyonu
+
+    /// Game Center'a kullanıcı girişini başlatır.
+    /// viewController: Apple'ın kendi giriş ekranını üzerinde gösterecek controller
+    /// viewDidLoad'da çağrılır — uygulama açıldığında kimlik doğrulama tamamlanır
+    static func authenticateGameCenter(from viewController: UIViewController) {
+        let player = GKLocalPlayer.local
+        player.authenticateHandler = { vc, error in
+            if let vc = vc {
+                // Apple'ın standart Game Center giriş ekranını göster
+                viewController.present(vc, animated: true)
+            } else if player.isAuthenticated {
+                // Giriş başarılı — kullanıcı adını logla
+                print("Game Center giriş başarılı: \(player.displayName)")
+            }
+            // Giriş reddedilirse ya da hata oluşursa sessizce devam et — crash olmaz
+        }
+    }
+
+    /// Mevcut skoru Game Center liderlik tablosuna gönderir.
+    /// Her oyun bitişinde çağrılır — sadece rekorda değil
+    static func submitScore(_ score: Int) {
+        // Kullanıcı giriş yapmamışsa gönderme — hata ve crash önler
+        guard GKLocalPlayer.local.isAuthenticated else { return }
+
+        GKLeaderboard.submitScore(
+            score,
+            context: 0,
+            player: GKLocalPlayer.local,
+            leaderboardIDs: ["com.novablock.highscore"]
+        ) { error in
+            if let error = error {
+                // Hata sessizce loglanır — kullanıcı deneyimini bozmaz
+                print("Skor gönderilemedi: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Game Center liderlik tablosu ekranını açar.
+    /// viewController: GKGameCenterViewController üzerinde gösterilecek controller
+    static func showLeaderboard(from viewController: UIViewController) {
+        // Kullanıcı giriş yapmamışsa gösterme — boş ekran açılmaz
+        guard GKLocalPlayer.local.isAuthenticated else { return }
+
+        let vc = GKGameCenterViewController(
+            leaderboardID: "com.novablock.highscore",
+            playerScope: .global,   // Tüm oyuncular — sadece arkadaşlar değil
+            timeScope: .allTime     // Tüm zamanlar — haftalık değil
+        )
+        // Delegate olarak geçirilen controller, ekran kapatmayı yönetir
+        vc.gameCenterDelegate = viewController as? GKGameCenterControllerDelegate
+        viewController.present(vc, animated: true)
     }
 
     // MARK: - Özel Yardımcı

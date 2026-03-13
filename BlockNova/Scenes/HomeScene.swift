@@ -38,6 +38,10 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
     private var playButtonLabel: SKLabelNode?
     /// Rekor etiketi — layout degisiminde yeniden konumlanir
     private var highScoreLabel: SKLabelNode?
+    /// Liderlik tablosu butonu — layout degisiminde boyut/konum guncellenir
+    private var leaderboardButtonNode: SKShapeNode?
+    /// Liderlik butonu yazisi — layout degisiminde font/konum guncellenir
+    private var leaderboardButtonLabel: SKLabelNode?
 
     // MARK: - Kurulum Bayragi
 
@@ -62,6 +66,7 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
             setupDecorativeBlocks()
             setupLogo()
             setupPlayButton()
+            setupLeaderboardButton()  // Liderlik butonu OYNA butonunun hemen altına eklenir
             setupHighScoreLabel()
             isSceneSetup = true
         }
@@ -128,12 +133,16 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
         // Oyna butonunun boyutu ve konumu safe area'ya gore ayarlanir
         layoutPlayButton()
 
-        // Rekor etiketi butonun altinda sabitlenir
+        // Liderlik butonu OYNA butonunun altında konumlanir
+        layoutLeaderboardButton()
+
+        // Rekor etiketi liderlik butonunun altinda sabitlenir
         if let highScoreLabel {
             highScoreLabel.fontSize = C.screenH * 0.020
             let btnY = safeAreaFrame.minY + safeAreaFrame.height * 0.38
             let btnH = C.screenH * 0.072
-            let margin = C.screenH * 0.028
+            // Liderlik butonu da alta eklendi — rekor etiketi daha asagiya iner
+            let margin = C.screenH * 0.028 + btnH + C.screenH * 0.018
             highScoreLabel.position = CGPoint(
                 x: safeAreaFrame.midX,
                 y: btnY - btnH - margin
@@ -155,6 +164,35 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
             let x = safeAreaFrame.minX + item.xRatio * safeAreaFrame.width
             let y = safeAreaFrame.minY + item.yRatio * safeAreaFrame.height
             item.node.position = CGPoint(x: x, y: y)
+        }
+    }
+
+    /// Liderlik butonunun boyut ve pozisyonunu gunceller — OYNA butonunun hemen altina konumlanir
+    private func layoutLeaderboardButton() {
+        guard let leaderboardButtonNode else { return }
+
+        // Buton boyutlari OYNA butonu ile eslesir — tutarli UI
+        let btnW = C.screenW * 0.52
+        let btnH = C.screenH * 0.072
+        // OYNA buton Y degeri — liderlik butonu bunun hemen altina gider
+        let playBtnY = safeAreaFrame.minY + safeAreaFrame.height * 0.38
+        let spacing  = C.screenH * 0.018  // Butonlar arasi bosluk
+        let btnY     = playBtnY - btnH - spacing
+
+        // Rounded rect path guncelle — SKShapeNode boyutu path ile kontrol edilir
+        let rect = CGRect(x: -btnW / 2, y: -btnH / 2, width: btnW, height: btnH)
+        leaderboardButtonNode.path = CGPath(
+            roundedRect: rect,
+            cornerWidth: btnH / 2,
+            cornerHeight: btnH / 2,
+            transform: nil
+        )
+        leaderboardButtonNode.position = CGPoint(x: safeAreaFrame.midX, y: btnY)
+
+        // Buton yazisi font boyutu ve ortasi guncellenir
+        if let leaderboardButtonLabel {
+            leaderboardButtonLabel.fontSize = C.screenH * 0.030
+            leaderboardButtonLabel.position = .zero
         }
     }
 
@@ -308,6 +346,31 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
         btn.run(pulse)
     }
 
+    // MARK: - Liderlik Tablosu Butonu
+
+    /// Mavi tonda rounded buton — OYNA butonuyla uyumlu stil
+    private func setupLeaderboardButton() {
+        // Buton arka plani — mavi ton kullanilir: oyundan farkli ama uyumlu
+        let rect = CGRect(x: -1, y: -1, width: 2, height: 2)
+        let btn  = SKShapeNode(rect: rect, cornerRadius: 1)
+        btn.fillColor   = UIColor(hex: "#1565c0").sk  // Koyu mavi — yesilden ayirt eder
+        btn.strokeColor = .clear
+        btn.zPosition   = C.zUI
+        btn.name        = "leaderboardButton"
+        addChild(btn)
+        leaderboardButtonNode = btn
+
+        // Buton yazisi
+        let lbl = SKLabelNode(fontNamed: C.fontBold)
+        lbl.text                  = "LIDERLIK"
+        lbl.fontSize              = C.screenH * 0.030
+        lbl.fontColor             = .white
+        lbl.verticalAlignmentMode = .center
+        lbl.name                  = "leaderboardButton"
+        btn.addChild(lbl)
+        leaderboardButtonLabel = lbl
+    }
+
     // MARK: - Rekor Etiketi
 
     /// Kaydedilmis en yuksek skoru gosterir
@@ -334,6 +397,15 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
             // Haptic: menuden oyuna gecis hissi
             HapticManager.selectionChanged()
             goToGame()
+        }
+
+        // Liderlik butonuna dokunulursa Game Center ekrani ac
+        if node.name == "leaderboardButton" || node.parent?.name == "leaderboardButton" {
+            HapticManager.selectionChanged()
+            // rootViewController üzerinden GKGameCenterViewController sunulur
+            if let rootVC = view?.window?.rootViewController {
+                GameManager.showLeaderboard(from: rootVC)
+            }
         }
     }
 

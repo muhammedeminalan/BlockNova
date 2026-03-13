@@ -440,6 +440,10 @@ extension GameScene: GameManagerDelegate {
     func didChangeState(_ state: GameState) {
         if state == .gameOver {
             HapticManager.notification(.error)
+
+            // Oyun bitince skoru Game Center'a gönder — her bitişte çağrılır, sadece rekorda değil
+            GameManager.submitScore(manager.score)
+
             run(SKAction.wait(forDuration: 0.45)) { [weak self] in
                 self?.showGameOverOverlay()
             }

@@ -6,6 +6,7 @@
 
 import UIKit
 import SpriteKit
+import GameKit  // Game Center entegrasyonu için gerekli
 
 // MARK: - SafeAreaUpdatable
 /// Scene tarafinda safe area bilgisini almak icin minimal protokol
@@ -14,10 +15,14 @@ protocol SafeAreaUpdatable: AnyObject {
     func updateSafeAreaInsets(_ insets: UIEdgeInsets)
 }
 
-final class GameViewController: UIViewController {
+// GKGameCenterControllerDelegate: liderlik tablosu ekranının kapatılmasını yönetir
+final class GameViewController: UIViewController, GKGameCenterControllerDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        // Game Center kimlik doğrulamasını uygulama açılışında başlat
+        GameManager.authenticateGameCenter(from: self)
 
         // Storyboard view'i zaten SKView olarak ayarli (Main.storyboard'da customClass="SKView")
         // Yeni SKView olusturma — dokunus performansi ve stabilite icin kritik
@@ -65,6 +70,13 @@ final class GameViewController: UIViewController {
     /// Home indicator gizli (iPhone X ve sonrasi)
     override var prefersHomeIndicatorAutoHidden: Bool {
         return true
+    }
+
+    // MARK: - GKGameCenterControllerDelegate
+
+    /// Liderlik tablosu ekranı kapatıldığında çağrılır — dismiss işlemini tamamlar
+    func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
+        gameCenterViewController.dismiss(animated: true)
     }
 
     // MARK: - Layout Senkronizasyonu
