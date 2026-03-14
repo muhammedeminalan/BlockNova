@@ -28,8 +28,9 @@ final class GameViewController: UIViewController, GKGameCenterControllerDelegate
         // Yeni SKView olusturma — dokunus performansi ve stabilite icin kritik
         guard let skView = view as? SKView else { return }
 
-        // Ilk sahne: HomeScene
-        let scene = HomeScene(size: view.bounds.size)
+        // İlk sahne: LoadingScene — preload ve Game Center auth burada yapılır,
+        // minimum 1.5sn sonra HomeScene'e geçer
+        let scene = LoadingScene(size: view.bounds.size)
         scene.scaleMode = .aspectFill
 
         // SpriteKit performans ayarlari

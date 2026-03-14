@@ -357,12 +357,19 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
     private func layoutScene() {
         C.updateSceneSize(size)
 
-        // Logo konumlandırması:
-        // BLOCK .right hizalı → X = merkez - yarı boşluk (metnin sağ kenarı ortada)
-        // NOVA  .left  hizalı → X = merkez + yarı boşluk (metnin sol kenarı ortada)
-        // İkisi ortada buluşur, aralarında sabit boşluk — genişlik hesabı gerekmez.
-        let logoY      = C.screenH * 0.72
-        let yariBosluk = C.screenW * 0.018  // İki kelime arasının yarısı
+        // Safe area sınırları — notch, home indicator ve Dynamic Island'ı hesaba katar
+        // safeTop/safeBottom: panellerin bu sınırları aşmaması için kullanılır
+        let safeBottom = safeAreaInsets.bottom
+        let safeTop    = safeAreaInsets.top
+        // Güvenli kullanılabilir alan: safe area içindeki tam yükseklik
+        let safeH      = C.screenH - safeTop - safeBottom
+        // Güvenli alanın alt referans noktası (SpriteKit: 0 = ekranın altı)
+        let safeMinY   = safeBottom
+
+        // --- LOGO ---
+        // Güvenli alanın üst %88'i — safe area'ya göre hesaplanır, notch'tan etkilenmez
+        let logoY      = safeMinY + safeH * 0.88
+        let yariBosluk = C.screenW * 0.018
         let fontBoyutu = logoFontBoyutu()
 
         if let block = blockLabel {
@@ -374,30 +381,34 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
             nova.position  = CGPoint(x: C.screenW / 2 + yariBosluk, y: logoY)
         }
 
-        // Tagline: logodan aşağı, font boyutuyla orantılı mesafe
+        // Tagline: logodan font boyutuyla orantılı mesafe aşağıda
         if let tagline = taglineLabel {
             tagline.fontSize = taglineFontBoyutu()
             tagline.position = CGPoint(x: C.screenW / 2, y: logoY - fontBoyutu * 1.15)
         }
 
-        // Skor kartı: orta band
+        // --- SKOR KARTI ---
+        // Güvenli alanın %62'si — logo ile butonlar arasında dengeli konum
         if let kart = scoreCardNode {
-            kart.position = CGPoint(x: C.screenW / 2, y: C.screenH * 0.50)
+            kart.position = CGPoint(x: C.screenW / 2, y: safeMinY + safeH * 0.62)
         }
 
-        // OYNA butonu
+        // --- OYNA BUTONU ---
+        // Güvenli alanın %45'i — skor kartının altında, rahat tıklanabilir bölge
         if let btn = playButtonNode {
-            btn.position = CGPoint(x: C.screenW / 2, y: C.screenH * 0.38)
+            btn.position = CGPoint(x: C.screenW / 2, y: safeMinY + safeH * 0.45)
         }
 
-        // LİDERLİK butonu
+        // --- LİDERLİK BUTONU ---
+        // OYNA butonunun altında — iki buton arasında yeterli boşluk
         if let btn = leaderButtonNode {
-            btn.position = CGPoint(x: C.screenW / 2, y: C.screenH * 0.28)
+            btn.position = CGPoint(x: C.screenW / 2, y: safeMinY + safeH * 0.33)
         }
 
-        // Versiyon etiketi — en altta
+        // --- VERSİYON ---
+        // Güvenli alanın en altında — home indicator çakışmaz
         if let lbl = versionLabel {
-            lbl.position = CGPoint(x: C.screenW / 2, y: C.screenH * 0.04)
+            lbl.position = CGPoint(x: C.screenW / 2, y: safeMinY + safeH * 0.04)
         }
     }
 
