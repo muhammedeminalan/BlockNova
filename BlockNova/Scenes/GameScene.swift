@@ -370,8 +370,8 @@ final class GameScene: SKScene, SafeAreaUpdatable {
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         if manager.state == .gameOver { return }
-        guard let touch = touches.first,
-              let piece = draggedPiece else { return }
+        guard draggedPiece != nil else { return }
+        let piece = draggedPiece!
 
         let dropLocation = piece.position
 
@@ -609,3 +609,4 @@ extension GameScene: GameManagerDelegate {
         ]))
     }
 }
+
