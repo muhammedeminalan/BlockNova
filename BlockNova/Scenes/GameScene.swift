@@ -421,6 +421,8 @@ final class GameScene: SKScene, SafeAreaUpdatable {
 
     private func placePiece(_ piece: PieceNode, at row: Int, col: Int) {
         HapticManager.impact(.medium)
+        // Blok grid'e yerleştirilince pop sesi çal
+        SoundManager.shared.playPlace(on: self)
         gridNode.place(piece.shape, at: row, col: col)
 
         trayPieces[piece.slotIndex] = nil
@@ -500,6 +502,8 @@ extension GameScene: GridDelegate {
     func gridDidClearLines(_ count: Int) {
         manager.addScore(forLines: count)
         HapticManager.impact(.heavy)
+        // Çizgi temizlenince long-pop sesi çal
+        SoundManager.shared.playClear(on: self)
         showLineClearEffect(count: count)
     }
 
@@ -552,12 +556,18 @@ extension GameScene: GameManagerDelegate {
             SKAction.scale(to: 1.00, duration: 0.08)
         ]), withKey: "scoreBounce")
 
-        if isNewRecord { showNewRecordEffect() }
+        if isNewRecord {
+            // Yeni rekor kırılınca achievement sesi çal — her skor artışında değil, sadece rekorда
+            SoundManager.shared.playRecord(on: self)
+            showNewRecordEffect()
+        }
     }
 
     func didChangeState(_ state: GameState) {
         if state == .gameOver {
             HapticManager.notification(.error)
+            // Oyun bitince game-over sesi çal
+            SoundManager.shared.playGameOver(on: self)
 
             // Game over olunca kaydı sil — devam edilecek oyun kalmadı
             GameSaveManager.shared.sil()

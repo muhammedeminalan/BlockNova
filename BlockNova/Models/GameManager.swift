@@ -172,9 +172,11 @@ final class GameManager {
             highScore = score
             // Kalıcı kayıt: uygulama kapansa da korunur
             UserDefaults.standard.set(highScore, forKey: C.highScoreKey)
-            isNewRecord = true
-            // Bu oturumda rekor kırıldığını işaretle — oyun bitince overlay'de gösterilir
-            newRecordAchieved = true
+            // isNewRecord sadece bu oturumda rekor ilk kez kırılınca true — sonraki artışlarda false
+            if !newRecordAchieved {
+                isNewRecord = true
+                newRecordAchieved = true
+            }
         }
         delegate?.didUpdateScore(score, highScore: highScore, isNewRecord: isNewRecord)
     }
