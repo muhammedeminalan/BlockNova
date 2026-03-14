@@ -260,7 +260,7 @@ final class GridNode: SKNode {
     // MARK: - Cizgi Kontrolu ve Temizleme
 
     /// Her yerlestirmeden sonra cagirilir.
-    /// Dolu satir ve sutunlari bulur, flash animasyonu oynatir, sonra temizler.
+    /// Dolu satir ve sutunlari bulur, efekt oynatir, sonra temizler.
     /// Node olusturulmuyor — mevcut node'lara animasyon uygulanir (kasa onleme).
     private func checkAndClearLines() {
         var rowsToClear: [Int] = []
@@ -282,41 +282,168 @@ final class GridNode: SKNode {
         // Hic cizgi yoksa erken cik — gereksiz animasyon yok
         guard !rowsToClear.isEmpty || !colsToClear.isEmpty else { return }
 
-        // Temizlenecek benzersiz hucre node'lari — hem satir hem sutun kesisebilir
-        var affectedNodes: [SKSpriteNode] = []
-        var affectedCoords: Set<String>   = []
+        // Temizlenecek benzersiz hucre node'lari ve duny koordinatlari
+        // Koordinat seti: ayni hucreyi iki kez islememek icin (satir-sutun kesisimi)
+        var affectedNodes:  [SKSpriteNode] = []
+        var affectedColors: [UIColor]      = []   // Her hucrenin o anki rengi — partikul rengine eslesir
+        var affectedWorldPositions: [CGPoint] = [] // Partikul icin dunya koordinati
+        var affectedCoords: Set<String>    = []
 
-        // Ayni hucreyi iki kez eklememek icin koordinat seti kullan
         func addCoord(_ r: Int, _ c: Int) {
             let key = "\(r),\(c)"
-            if affectedCoords.insert(key).inserted {
-                affectedNodes.append(cellNodes[r][c])
+            guard affectedCoords.insert(key).inserted else { return }
+            let node = cellNodes[r][c]
+            affectedNodes.append(node)
+            // Hucrenin rengi: dolu ise blok rengi, yoksa varsayilan
+            affectedColors.append(cellColors[r][c] ?? C.cellEmptyColor)
+            // Grid-lokal koordinati sahne koordinatina cevir — partikul pozisyonu icin
+            if let scene = self.scene {
+                affectedWorldPositions.append(convert(positionFor(row: r, col: c), to: scene))
+            } else {
+                affectedWorldPositions.append(positionFor(row: r, col: c))
             }
         }
 
-        // Satir hucrelerini ekle
         for row in rowsToClear { for col in 0..<C.cols { addCoord(row, col) } }
-        // Sutun hucrelerini ekle
         for col in colsToClear { for row in 0..<C.rows { addCoord(row, col) } }
 
-        // Flash animasyonu: beyaza gecip geri don — patlama hissi
-        let flashOn  = SKAction.colorize(with: .white, colorBlendFactor: 1.0, duration: 0.05)
-        let flashOff = SKAction.colorize(with: .white, colorBlendFactor: 0.0, duration: 0.12)
-        let flash    = SKAction.sequence([flashOn, flashOff])
-
-        // Tum etkilenmis hucrelere animasyon uygula
-        for node in affectedNodes { node.run(flash) }
-
-        // Animasyon bittikten sonra veri ve gorsel temizle
         let lineCount = rowsToClear.count + colsToClear.count
+
+        // Combo seviyesine gore efekt uygula — tek cizgi sadedir, combo giderek guclu
+        playLineClearEffect(
+            lineCount:             lineCount,
+            nodes:                 affectedNodes,
+            colors:                affectedColors,
+            worldPositions:        affectedWorldPositions
+        )
+
+        // Flash suresi bittikten sonra veri ve gorsel temizle
+        // 0.18: flash animasyonunun tamamlanma suresiyle eslesir — ani kaybolusluk onlenir
         run(SKAction.wait(forDuration: 0.18)) { [weak self] in
             guard let self = self else { return }
-            // Satirlari temizle
             for row in rowsToClear { for col in 0..<C.cols { self.clearCell(row: row, col: col) } }
-            // Sutunlari temizle
             for col in colsToClear { for row in 0..<C.rows { self.clearCell(row: row, col: col) } }
-            // Skor icin delegate'i bilgilendir
             self.delegate?.gridDidClearLines(lineCount)
+        }
+    }
+
+    // MARK: - Cizgi Kirma Efekti
+
+    /// Kirik cizgi sayisina gore dogru efekti secer ve tetikler.
+    /// Tek cizgi: sade flash + scatter
+    /// Double (2): altin flash + daha fazla partikul
+    /// Mega (3+): ekran sarsintisi + cyan flash + yogun partikul
+    private func playLineClearEffect(lineCount: Int,
+                                     nodes: [SKSpriteNode],
+                                     colors: [UIColor],
+                                     worldPositions: [CGPoint]) {
+        switch lineCount {
+        case 1:
+            singleClearEffect(nodes: nodes, colors: colors, worldPositions: worldPositions)
+        case 2:
+            doubleClearEffect(nodes: nodes, worldPositions: worldPositions)
+        default:
+            megaClearEffect(nodes: nodes, worldPositions: worldPositions)
+        }
+    }
+
+    /// Tek cizgi efekti: beyaz flash + hucrelerin dagilan parcaciklari
+    /// colorize kullanilmaz — texture'siz node'da gorunsuz kalir.
+    /// Bunun yerine SKAction.run ile .color property'si dogrudan degistirilir.
+    private func singleClearEffect(nodes: [SKSpriteNode],
+                                   colors: [UIColor],
+                                   worldPositions: [CGPoint]) {
+        for node in nodes {
+            // .color dogrudan beyaza set edilip gecikme sonrasi bos renge dondurulur
+            node.run(SKAction.sequence([
+                SKAction.run { node.color = .white },
+                SKAction.wait(forDuration: 0.07),
+                SKAction.run { node.color = C.cellEmptyColor.sk }
+            ]))
+        }
+        // Her hucrenin kendi rengiyle 6 partikul — renk eslesmesi dogal gorunum saglar
+        for (pos, color) in zip(worldPositions, colors) {
+            spawnParticles(at: pos, color: color, count: 6)
+        }
+    }
+
+    /// Double efekti: altin flash + 10 partikul
+    /// colorize yerine dogrudan .color atamasi — texture'siz node'da tek calisaн yol
+    private func doubleClearEffect(nodes: [SKSpriteNode],
+                                   worldPositions: [CGPoint]) {
+        let altın = UIColor(red: 1, green: 0.84, blue: 0, alpha: 1)
+        for node in nodes {
+            node.run(SKAction.sequence([
+                SKAction.run { node.color = altın.sk },
+                SKAction.wait(forDuration: 0.10),
+                SKAction.run { node.color = C.cellEmptyColor.sk }
+            ]))
+        }
+        // Normalin ~1.5 kati partikul — combo gucunu hissettirir
+        for pos in worldPositions {
+            spawnParticles(at: pos, color: altın, count: 10)
+        }
+    }
+
+    /// Mega efekti (3+): ekran sarsintisi + cyan flash + yogun partikul
+    /// colorize yerine dogrudan .color atamasi — texture'siz node'da tek calisан yol
+    private func megaClearEffect(nodes: [SKSpriteNode],
+                                  worldPositions: [CGPoint]) {
+        // Ekran sarsintisi: camera veya scene'i bul ve shake uygula — yogunluk hissi verir
+        scene?.run(SKAction.sequence([
+            SKAction.moveBy(x: -7, y: 0, duration: 0.03),
+            SKAction.moveBy(x: 14, y: 0, duration: 0.04),
+            SKAction.moveBy(x: -14, y: 0, duration: 0.04),
+            SKAction.moveBy(x: 7,  y: 0, duration: 0.03)
+        ]))
+
+        let cyan = UIColor(red: 0, green: 0.9, blue: 1, alpha: 1)
+        for node in nodes {
+            node.run(SKAction.sequence([
+                SKAction.run { node.color = cyan.sk },
+                SKAction.wait(forDuration: 0.13),
+                SKAction.run { node.color = C.cellEmptyColor.sk }
+            ]))
+        }
+        // En yogun partikul patlamas — hucre basina 15 ile sinirli (kasa onleme)
+        for pos in worldPositions {
+            spawnParticles(at: pos, color: cyan, count: 15)
+        }
+    }
+
+    // MARK: - Partikul Sistemi
+
+    /// Belirtilen dunya konumuna renk ve sayida partikul firlatiir.
+    /// SKEmitterNode yerine elle SKSpriteNode — .sks dosyasi gerekmez, her zaman calisiir.
+    /// Partikul animasyon bittikten sonra removeFromParent ile kendini siler — bellek temiz kalir.
+    private func spawnParticles(at worldPosition: CGPoint, color: UIColor, count: Int) {
+        // Partikulleri sahneye ekle — GridNode'a degil, boylece grid transformundan etkilenmez
+        guard let targetScene = self.scene else { return }
+
+        for _ in 0..<count {
+            let size = CGFloat.random(in: 4...8)
+            let particle = SKSpriteNode(color: color.sk,
+                                        size: CGSize(width: size, height: size))
+            particle.position  = worldPosition
+            particle.zPosition = 150    // Her seyin onunde gorunsun
+            particle.alpha     = 0.9
+            targetScene.addChild(particle)
+
+            // Rastgele yon ve mesafe — her partikul farkli yonde ucar
+            let angle    = CGFloat.random(in: 0...(2 * .pi))
+            let distance = CGFloat.random(in: 25...60)
+            let dx = cos(angle) * distance
+            let dy = sin(angle) * distance
+
+            // Hareket + kuculme + solma ayni anda — 0.35sn: yeterince uzun ama kasa yapmaz
+            particle.run(SKAction.sequence([
+                SKAction.group([
+                    SKAction.moveBy(x: dx, y: dy, duration: 0.35),
+                    SKAction.fadeOut(withDuration: 0.35),
+                    SKAction.scale(to: 0.1, duration: 0.35)
+                ]),
+                SKAction.removeFromParent()
+            ]))
         }
     }
 
