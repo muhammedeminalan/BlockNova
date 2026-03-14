@@ -22,7 +22,7 @@ Nova Block does not use any third-party analytics, advertising, or tracking serv
 
 ## Contact
 
-If you have any questions, contact: muhammedeminalan@icloud.com
+If you have any questions, contact: eminalan334@gmail.com
 
 ## Changes
 
