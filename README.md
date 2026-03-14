@@ -1,168 +1,167 @@
-# BlockNova
+<div align="center">
 
-> **Sürükle. Yerleştir. Patlat!** — A minimalist block puzzle game for iPhone.
+# 🟦 Nova Block
 
-<p align="center">
-  <img src="screenshot/01_launch.png" width="180" alt="Launch Screen"/>
-  &nbsp;&nbsp;
-  <img src="screenshot/02_home.png" width="180" alt="Home Screen"/>
-  &nbsp;&nbsp;
-  <img src="screenshot/03_game_start.png" width="180" alt="Game Start"/>
-  &nbsp;&nbsp;
-  <img src="screenshot/04_game_play.png" width="180" alt="Gameplay"/>
-  &nbsp;&nbsp;
-  <img src="screenshot/05_game_over.png" width="180" alt="Game Over"/>
-</p>
+**SpriteKit ile geliştirilmiş modern blok yerleştirme oyunu**
 
----
+*Sürükle. Yerleştir. Patlat.*
 
-## Overview
+<br/>
 
-**BlockNova** is a drag-and-drop block puzzle game built with Apple's **SpriteKit** framework. Players drag colorful pieces onto an 8×8 grid, filling rows or columns to clear them and earn points. The game ends when no remaining piece fits on the board.
+[![iOS](https://img.shields.io/badge/iOS-15.5%2B-0A84FF?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/ios/)
+[![Swift](https://img.shields.io/badge/Swift-5-FA7343?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
+[![SpriteKit](https://img.shields.io/badge/SpriteKit-Framework-9B59B6?style=for-the-badge&logo=apple&logoColor=white)]()
+[![App Store](https://img.shields.io/badge/App%20Store-İndir-000000?style=for-the-badge&logo=app-store&logoColor=white)](https://apps.apple.com)
 
-The design philosophy is **minimalism meets strategy**: no timers, no rotation — pure spatial reasoning and planning ahead.
+</div>
 
 ---
 
-## Screenshots
+## 📸 Ekran Görüntüleri
 
-| Launch Screen | Home Screen | Game Start | Gameplay | Game Over |
-|:-------------:|:-----------:|:----------:|:--------:|:---------:|
-| <img src="screenshot/01_launch.png" width="150"/> | <img src="screenshot/02_home.png" width="150"/> | <img src="screenshot/03_game_start.png" width="150"/> | <img src="screenshot/04_game_play.png" width="150"/> | <img src="screenshot/05_game_over.png" width="150"/> |
-| Native iOS launch screen | Animated logo & floating blocks | Empty 8×8 grid, 3 pieces ready | Pieces placed, score updating | Score summary with Play Again |
-
----
-
-## Features
-
-### Core Gameplay
-- **8×8 Grid** — Classic block puzzle board
-- **11 Unique Shapes** — Single cell, 2/3-cell lines, 2×2 square, L, J, T, S, Z tetrominos and variants
-- **Drag & Drop** — Smooth, finger-offset dragging; piece lifts above the thumb for clear visibility
-- **Line Clearing** — Complete any full row or column to clear it and score points
-- **Combo Bonus** — Clear multiple lines at once for bonus points (2 lines: +25, 3+ lines: +50)
-- **Game Over Detection** — Game ends automatically when none of the 3 current pieces can be placed
-
-### Scoring System
-| Action | Points |
-|--------|--------|
-| Place each cell | +1 per cell |
-| Clear 1 line | +10 |
-| Clear 2 lines | +35 (10×2 + 25 bonus) |
-| Clear 3+ lines | +n×10 + 50 bonus |
-
-- **High Score** is saved permanently via `UserDefaults` and displayed on both the Home screen and in-game panel
-
-### Visual Feedback
-- **Green/Red highlight** — Hover feedback shows where a piece will land (green = valid, red = invalid)
-- **Floating text effects** — "LINE!", "DOUBLE!", "COMBO x3!" animations on line clears
-- **Score bounce** — Score label micro-animates on every update
-- **"YENİ REKOR!" badge** — Pops when the player beats their high score mid-game
-- **Game Over overlay** — Smooth modal with final score, all-time best, and action buttons
-
-### Polish & UX
-- **Haptic Feedback** — Distinct haptics for piece placement, line clears, and game over
-- **Animated Home Screen** — 8 colorful floating blocks with drift + rotation loops
-- **Pulse button animation** — The Play button gently pulses to invite a tap
-- **Fade scene transitions** — Smooth 0.4s cross-fade between Home and Game scenes
-
-### Smart Shape Distribution (3-Layer Algorithm)
-BlockNova uses a sophisticated `ShapeDispenser` to keep the game fair and varied:
-
-1. **Shuffle Bag** — All 11 shapes are placed in a bag and shuffled; each shape appears at least once per 11 draws
-2. **History Memory (82% reject)** — The last 6 drawn shapes are tracked; shapes seen recently are rejected 82% of the time
-3. **Round Uniqueness** — All 3 pieces offered in each round are always different shapes
+<div align="center">
+  <img src="screenshot/01_launch.png" width="170" alt="Yükleniyor"/>
+  &nbsp;&nbsp;
+  <img src="screenshot/02_home.png" width="170" alt="Ana Ekran"/>
+  &nbsp;&nbsp;
+  <img src="screenshot/03_game_start.png" width="170" alt="Oyun Başlangıcı"/>
+  &nbsp;&nbsp;
+  <img src="screenshot/04_game_play.png" width="170" alt="Oynanış"/>
+  &nbsp;&nbsp;
+  <img src="screenshot/05_game_over.png" width="170" alt="Oyun Sonu"/>
+</div>
 
 ---
 
-## Architecture
+## ✨ Özellikler
+
+### Temel Oynanış
+- **8×8 ızgara** — Klasik blok bulmaca alanı
+- **12 benzersiz şekil** — Tekli hücre, 2/3'lü çizgiler, 2×2/3×3 kareler, L / J / T / S / Z tetromino'lar
+- **Akıllı sürükleme** — Parça parmağın üzerinden kalkar, ızgara hücresine snap'ler
+- **Combo sistemi** — Aynı hamlede birden fazla çizgi patlatarak bonus puan kazan
+- **Oyun sonu tespiti** — Hiçbir parça sığmadığında otomatik bitiş
+
+### Puan Tablosu
+
+| Aksiyon | Puan |
+|---|---|
+| Her yerleştirilen hücre | +1 |
+| 1 çizgi temizleme | +10 |
+| 2 çizgi temizleme | +35 *(10×2 + 25 bonus)* |
+| 3+ çizgi temizleme | +n×10 + 50 *(combo bonusu)* |
+
+### Görsel Geri Bildirim
+- **Yeşil / Kırmızı önizleme** — Hover sırasında geçerli/geçersiz alanı anlık gösterir
+- **Uçan metin efektleri** — `LINE!` · `DOUBLE!` · `COMBO x3!` animasyonları
+- **"YENİ REKOR!"** — Oyun içinde rekor kırılınca badge patlar
+- **Skor micro-animasyon** — Her güncelleme skor etiketini canlandırır
+
+### Platform & UX
+- **Game Center** liderlik tablosu entegrasyonu
+- **Kaldığın yerden devam** — Uygulama kapansa bile oyun devam eder
+- **Haptic feedback** — Yerleştirme, temizleme, oyun sonu için ayrı titreşimler
+- **Ses efektleri** — Her aksiyon için özel ses
+- **Loading ekranında arka plan auth** — Game Center girişi oyunu bloklamaz
+- **Responsive tasarım** — Tüm iPhone boyutlarında pixel-perfect
+
+---
+
+## 🛠 Teknik Detaylar
+
+| | |
+|---|---|
+| **Platform** | iOS 15.5+ · iPhone · Portrait |
+| **Dil** | Swift 5 |
+| **Framework** | SpriteKit · GameKit · UIKit |
+| **Mimari** | MVC + Extension tabanlı |
+| **Kalıcılık** | UserDefaults — sunucu yok, ağ bağlantısı yok |
+| **Bağımlılık** | **Sıfır** — hiçbir third-party kütüphane |
+
+---
+
+## 📁 Proje Yapısı
 
 ```
 BlockNova/
-├── AppDelegate.swift
-├── GameViewController.swift        # UIViewController host for SpriteKit
+├── App/
+│   ├── AppDelegate.swift           # Game Center auth başlatma
+│   └── GameViewController.swift    # SpriteKit host, GKGameCenterControllerDelegate
 │
 ├── Scenes/
-│   ├── HomeScene.swift             # Animated main menu scene
-│   ├── GameScene.swift             # Core game loop & touch handling
-│   ├── GameScene+Layout.swift      # Safe area-aware responsive layout
-│   └── GameScene+Overlay.swift     # Game over modal construction
+│   ├── LoadingScene.swift          # Splash + arka plan auth bekleme
+│   ├── HomeScene.swift             # Animasyonlu ana menü
+│   ├── GameScene.swift             # Ana oyun döngüsü ve dokunma yönetimi
+│   ├── GameScene+Layout.swift      # Safe area'ya duyarlı responsive yerleşim
+│   └── GameScene+Overlay.swift     # Oyun sonu modal yapımı
 │
 ├── Nodes/
-│   ├── GridNode.swift              # 8×8 grid rendering & game logic
-│   ├── BlockNode.swift             # Individual cell node
-│   └── PieceNode.swift             # Draggable piece composed of BlockNodes
+│   ├── GridNode.swift              # 8×8 ızgara çizimi + oyun mantığı
+│   ├── BlockNode.swift             # Tekil hücre node'u
+│   └── PieceNode.swift             # BlockNode'lardan oluşan sürüklenebilir parça
 │
 ├── Models/
-│   ├── BlockShape.swift            # Shape definitions (11 types, colors, offsets)
-│   ├── GameManager.swift           # Score tracking, state machine, high score persistence
-│   └── ShapeDispenser.swift        # 3-layer balanced shape distribution algorithm
+│   ├── BlockShape.swift            # 12 şekil tanımı (tip, offset, renk)
+│   ├── ShapeDispenser.swift        # 3 katmanlı dengeli dağıtım algoritması
+│   └── GameManager.swift           # Skor, durum makinesi, Game Center entegrasyonu
 │
 ├── ViewModels/
-│   └── GameViewModel.swift         # Presentation formatting (score text, labels)
+│   └── GameViewModel.swift         # Skor metinleri ve label formatlaması
 │
 └── Utils/
-    ├── Constants.swift             # Responsive layout constants (all sizes % of screen)
-    └── HapticManager.swift         # UIImpactFeedbackGenerator / UINotificationFeedbackGenerator
+    ├── Constants.swift             # Tüm boyutlar screenW/screenH oransal
+    ├── HapticManager.swift         # UIImpactFeedbackGenerator sarmalayıcısı
+    ├── SoundManager.swift          # Ses efekti yönetimi
+    └── GameSaveManager.swift       # UserDefaults ile save/restore
 ```
 
-### Design Patterns
-- **MVC + ViewModel** — `GameManager` (Model) → `GameViewModel` (ViewModel) → `GameScene` (View)
-- **Delegate Pattern** — `GridDelegate` and `GameManagerDelegate` for decoupled event propagation
-- **Responsive Layout** — Zero hardcoded pixel values; all sizes derived from `UIScreen.main.bounds`
-- **Safe Area Aware** — Panels and grid respect `safeAreaInsets` on all iPhone models
+---
+
+## 🏗 Mimari Kararlar
+
+| Karar | Gerekçe |
+|---|---|
+| Fizik motoru kullanılmadı | Grid tabanlı mantık deterministik ve öngörülebilir |
+| Node'lar silinmiyor, renk değiştiriliyor | Kasa (frame freeze) sorunlarını tamamen ortadan kaldırır |
+| `touchesMoved`'da SKAction yok | Direkt `position` ataması ile gecikme sıfır, sürükleme akıcı |
+| Tüm boyutlar `screenW/screenH` oransal | Hardcode piksel yok — her iPhone'da kusursuz |
+| `GameManagerDelegate` pattern | Skor/durum değişiklikleri Scene'e gevşek bağlı — test edilebilir |
 
 ---
 
-## Tech Stack
+## 🚀 Kurulum
 
-| Technology | Usage |
-|------------|-------|
-| **Swift 5** | Primary language |
-| **SpriteKit** | Game rendering, animations, scene management |
-| **UIKit** | View controller, haptics, safe area |
-| **UserDefaults** | Persistent high score storage |
-| **Xcode** | IDE & build toolchain |
+Xcode 15+ gereklidir. Bağımlılık yöneticisi gerekmez:
 
----
+```bash
+git clone https://github.com/muhammedeminalan/BlockNova.git
+cd BlockNova
+open BlockNova.xcodeproj
+```
 
-## Requirements
-
-- **iOS 15.0+**
-- **iPhone** (portrait orientation)
-- Xcode 14+ to build from source
+Simulator veya fiziksel cihazda direkt çalıştırılabilir. Game Center özellikleri fiziksel cihaz gerektirir.
 
 ---
 
-## How to Play
+## 👤 Geliştirici
 
-1. **Tap OYNA** on the home screen to start
-2. Three pieces appear at the bottom tray
-3. **Drag a piece** from the tray onto the grid — it snaps to the nearest valid cell
-4. Fill a complete **row or column** to clear it and earn bonus points
-5. When **no remaining piece fits** on the board, the game ends
-6. Tap **TEKRAR OYNA** to restart or **ANA MENÜ** to return home
+<div align="center">
 
-**Tips:**
-- Plan 2–3 moves ahead — pieces can't be rotated
-- Clearing multiple lines simultaneously triggers a combo bonus
-- Keep the grid open in the center to maximize placement options
+**Muhammed Emin Alan**
+
+[![GitHub](https://img.shields.io/badge/GitHub-muhammedeminalan-181717?style=flat-square&logo=github)](https://github.com/muhammedeminalan)
+[![pub.dev](https://img.shields.io/badge/pub.dev-wonzy__core__utils-02569B?style=flat-square&logo=dart&logoColor=white)](https://pub.dev/packages/wonzy_core_utils)
+
+</div>
 
 ---
 
-## Project Structure Notes
+## 📄 Lisans
 
-- All color constants live in `Constants.swift` with a neon palette (11 colors, one per shape type)
-- `C.cellSize` and all layout metrics are computed from `C.screenW` / `C.screenH` at runtime — no storyboards, no Auto Layout
-- `GameScene` is split into three files for clarity: core logic, layout, and overlay construction
-- `HapticManager` wraps UIKit feedback generators with a clean API used across the codebase
+Bu proje **MIT Lisansı** altında dağıtılmaktadır.
 
 ---
 
-## License
-
-This project is proprietary. All rights reserved.
-
----
-
-<p align="center">Built with Swift & SpriteKit</p>
+<div align="center">
+  <sub>Built with ❤️ using Swift & SpriteKit</sub>
+</div>
