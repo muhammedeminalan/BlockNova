@@ -6,7 +6,7 @@
 // removeAllChildren + node yaratma gesture pipeline'ini kilitler (gesture gate timeout).
 
 import SpriteKit
-import UIKit
+// import UIKit kaldırıldı — SpriteKit zaten UIKit'i dahil eder, duplicate import gereksiz
 
 // MARK: - PieceNode
 final class PieceNode: SKNode {

@@ -53,14 +53,6 @@ final class GameSaveManager {
         }
     }
 
-    // MARK: - Kayıt Var Mı?
-
-    /// Kaydedilmiş aktif oyun durumu var mı?
-    /// HomeScene veya GameScene'de devam seçeneği sunmak için kullanılır.
-    func kayitVarMi() -> Bool {
-        return UserDefaults.standard.data(forKey: kayitAnahtari) != nil
-    }
-
     // MARK: - Yükleme
 
     /// UserDefaults'tan JSON'u okur ve decode eder.

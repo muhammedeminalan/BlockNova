@@ -111,10 +111,4 @@ extension BlockShape {
                    color: C.colorZ),
     ]
 
-    // MARK: - Rastgele 3 Şekil
-    /// Tepsi için 3 benzersiz rastgele şekil seçer.
-    /// Aynı şeklin tekrar gelmemesi için shuffle kullanılır.
-    static func randomThree() -> [BlockShape] {
-        return Array(all.shuffled().prefix(3))
-    }
 }

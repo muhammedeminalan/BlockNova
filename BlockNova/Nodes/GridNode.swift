@@ -5,7 +5,7 @@
 // Grid merkez-origin koordinat sistemi kullanir: (0,0) grid'in tam ortasi.
 
 import SpriteKit
-import UIKit
+// import UIKit kaldırıldı — SpriteKit zaten UIKit'i dahil eder, duplicate import gereksiz
 
 // MARK: - GridDelegate
 /// Grid olaylarini GameScene'e iletmek icin.
@@ -416,14 +416,27 @@ final class GridNode: SKNode {
     /// Belirtilen dunya konumuna renk ve sayida partikul firlatiir.
     /// SKEmitterNode yerine elle SKSpriteNode — .sks dosyasi gerekmez, her zaman calisiir.
     /// Partikul animasyon bittikten sonra removeFromParent ile kendini siler — bellek temiz kalir.
+    ///
+    /// Partikül sınırı: sahnede aynı anda max 120 partikül olabilir.
+    /// Mega combo'da 24 hücre × 15 = 360 partikül düşük RAM cihazlarda kasa yaratır.
+    /// Bu sınır ile düşük RAM'li cihazlarda (iPhone SE, iPod Touch) frame drop önlenir.
     private func spawnParticles(at worldPosition: CGPoint, color: UIColor, count: Int) {
         // Partikulleri sahneye ekle — GridNode'a degil, boylece grid transformundan etkilenmez
         guard let targetScene = self.scene else { return }
 
-        for _ in 0..<count {
+        // Sahnedeki mevcut partikül sayısını kontrol et — 120'yi geçiyorsa spawn etme
+        // Düşük RAM cihazlarda kasa önlenir
+        let mevcutPartikul = targetScene.children.filter { $0.name == "partikul" }.count
+        guard mevcutPartikul < 120 else { return }
+
+        // Sınırı aşmamak için gerçek spawn sayısını hesapla
+        let gercekCount = min(count, 120 - mevcutPartikul)
+
+        for _ in 0..<gercekCount {
             let size = CGFloat.random(in: 4...8)
             let particle = SKSpriteNode(color: color.sk,
                                         size: CGSize(width: size, height: size))
+            particle.name      = "partikul"  // Sayım için isim — sınır kontrolünde kullanılır
             particle.position  = worldPosition
             particle.zPosition = 150    // Her seyin onunde gorunsun
             particle.alpha     = 0.9
