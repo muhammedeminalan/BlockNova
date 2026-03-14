@@ -67,7 +67,8 @@ enum C {
     // MARK: - Surukleme
     // Parmak parcayi kapatmasin diye sabit yukari ofset — hucre boyutuna gore hesaplanir
     // Sabit ofset kullanmak, parmak nereye dokunsa da parcayi gorunur tutar
-    static var dragOffsetY: CGFloat { cellSize * 1.1 }
+    // 2.8 kat: parça parmağın yaklaşık 2.5-3 hücre yukarısında kalır — görünürlük için
+    static var dragOffsetY: CGFloat { cellSize * 2.8 }
 
     // MARK: - Z Pozisyonları (Katman Sırası)
     // Daha büyük zPosition daha önde görünür — katman çakışmasını önler

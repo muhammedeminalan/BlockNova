@@ -340,13 +340,17 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         draggedPiece     = selected
         originalPosition = selected.position
 
-        // dragOffset: X'te parmak konumunu koru, Y'de sabit yukarı kaldır
+        // beginDrag önce çağrılır: setScale içeride çalışır ve parçanın görsel boyutu değişir.
+        // Offset hesabı scale sonrasında yapılmalı — aksi halde ölçek kayması dragOffset'i bozar.
+        selected.beginDrag()
+
+        // X offseti: parmak hangi noktaya dokunmuşsa parça o noktadan sürüklensin — kaymaz
+        // Y offseti: sabit yukarı kaldırma — parmak parçayı kapatmasın
         dragOffset = CGPoint(x: selected.position.x - location.x, y: C.dragOffsetY)
 
-        // Anlık konum — gecikme hissini kaldır
+        // Anlık konum ataması — gecikme hissi olmadan parça parmağa yapışır
         selected.position   = CGPoint(x: location.x + dragOffset.x, y: location.y + dragOffset.y)
         lastHighlightAnchor = nil
-        selected.beginDrag()
         updateHighlight(for: selected)
     }
 

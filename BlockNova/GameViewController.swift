@@ -40,6 +40,11 @@ final class GameViewController: UIViewController, GKGameCenterControllerDelegate
         skView.shouldCullNonVisibleNodes = true
         skView.presentScene(scene)
 
+        // SKView'a UIKit tarafindan otomatik eklenen gesture recognizer'lari kaldir.
+        // Bu recognizer'lar touchesBegan'dan once kendi tanima surecleri icin ~0.1-0.15sn bekler.
+        // Kaldirinca SpriteKit touches* metodlari aninda tetiklenir — gecikme hissi kaybolur.
+        skView.gestureRecognizers?.forEach { skView.removeGestureRecognizer($0) }
+
         // Ilk layout icin safe area ve scene boyutu bilgisini gonder
         updateSceneLayout()
     }
