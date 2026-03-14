@@ -3,13 +3,15 @@
 > **Sürükle. Yerleştir. Patlat!** — A minimalist block puzzle game for iPhone.
 
 <p align="center">
-  <img src="screenshot/home-screen.png" width="220" alt="Home Screen"/>
+  <img src="screenshot/01_launch.png" width="180" alt="Launch Screen"/>
   &nbsp;&nbsp;
-  <img src="screenshot/game-start.png" width="220" alt="Game Start"/>
+  <img src="screenshot/02_home.png" width="180" alt="Home Screen"/>
   &nbsp;&nbsp;
-  <img src="screenshot/gameplay.png" width="220" alt="Gameplay"/>
+  <img src="screenshot/03_game_start.png" width="180" alt="Game Start"/>
   &nbsp;&nbsp;
-  <img src="screenshot/game-over.png" width="220" alt="Game Over"/>
+  <img src="screenshot/04_game_play.png" width="180" alt="Gameplay"/>
+  &nbsp;&nbsp;
+  <img src="screenshot/05_game_over.png" width="180" alt="Game Over"/>
 </p>
 
 ---
@@ -24,10 +26,10 @@ The design philosophy is **minimalism meets strategy**: no timers, no rotation �
 
 ## Screenshots
 
-| Home Screen | Game Start | Gameplay | Game Over |
-|:-----------:|:----------:|:--------:|:---------:|
-| <img src="screenshot/home-screen.png" width="160"/> | <img src="screenshot/game-start.png" width="160"/> | <img src="screenshot/gameplay.png" width="160"/> | <img src="screenshot/game-over.png" width="160"/> |
-| Animated logo & floating blocks | Empty 8×8 grid, 3 pieces ready | Pieces placed, score updating | Score summary with Play Again |
+| Launch Screen | Home Screen | Game Start | Gameplay | Game Over |
+|:-------------:|:-----------:|:----------:|:--------:|:---------:|
+| <img src="screenshot/01_launch.png" width="150"/> | <img src="screenshot/02_home.png" width="150"/> | <img src="screenshot/03_game_start.png" width="150"/> | <img src="screenshot/04_game_play.png" width="150"/> | <img src="screenshot/05_game_over.png" width="150"/> |
+| Native iOS launch screen | Animated logo & floating blocks | Empty 8×8 grid, 3 pieces ready | Pieces placed, score updating | Score summary with Play Again |
 
 ---
 
