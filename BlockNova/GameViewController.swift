@@ -21,8 +21,8 @@ final class GameViewController: UIViewController, GKGameCenterControllerDelegate
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Game Center kimlik doğrulamasını uygulama açılışında başlat
-        GameManager.authenticateGameCenter(from: self)
+        // Game Center auth LoadingScene'de tek noktadan yapılıyor — çift çağrı race condition yaratır
+        // Bu yüzden buradaki auth çağrısı kaldırıldı (bkz: LoadingScene.authenticateGameCenter)
 
         // Storyboard view'i zaten SKView olarak ayarli (Main.storyboard'da customClass="SKView")
         // Yeni SKView olusturma — dokunus performansi ve stabilite icin kritik

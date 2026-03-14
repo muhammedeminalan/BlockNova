@@ -326,8 +326,9 @@ extension GameScene {
                 gosterilenDeger += adimBuyuklugu
                 if gosterilenDeger >= hedef {
                     gosterilenDeger = hedef
-                    // Hedefe ulaştı — animasyonu durdur
-                    label.removeAllActions()
+                    // Hedefe ulaştı — sadece sayaç aksiyonunu durdur, diğer aksiyonlar etkilenmez
+                    // removeAllActions() yerine key-based silme: label'a eklenen başka aksiyonlar korunur
+                    label.removeAction(forKey: "skorSayac")
                 }
                 label.text = "\(gosterilenDeger)"
             }

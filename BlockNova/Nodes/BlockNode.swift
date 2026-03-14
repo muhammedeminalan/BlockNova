@@ -4,7 +4,7 @@
 // Hem GridNode icindeki sabit hucreler hem de PieceNode icindeki onizleme hucreleri bunu kullanabilir.
 
 import SpriteKit
-import UIKit
+// import UIKit kaldırıldı — SpriteKit zaten UIKit'i dahil eder, duplicate import gereksiz
 
 // MARK: - BlockNode
 final class BlockNode: SKSpriteNode {
@@ -32,15 +32,6 @@ final class BlockNode: SKSpriteNode {
         fatalError("init(coder:) desteklenmez")
     }
 
-    // MARK: - Renk Guncelleme
-
-    /// Blogun rengini degistirir — node silmeden sadece renk atanir (kasa onleme)
-    func setBlockColor(_ color: UIColor) {
-        self.color = color
-        // Texture kullanilmadigi icin colorBlendFactor 0 olmali
-        colorBlendFactor = 0
-    }
-
     // MARK: - Yerlestirme Animasyonu
 
     /// Parca yerlestirilince hafif bounce — geri bildirim ve canlilik icin
@@ -52,17 +43,4 @@ final class BlockNode: SKSpriteNode {
         run(bounce)
     }
 
-    // MARK: - Temizleme Animasyonu
-
-    /// Cizgi temizlenince flash — patlama hissi icin
-    /// completion: tum animasyon bitince cagrilir
-    func playClearAnimation(completion: @escaping () -> Void) {
-        // Beyaza flash, sonra orijinal renge don
-        let flash = SKAction.colorize(with: .white, colorBlendFactor: 1.0, duration: 0.06)
-        let unflash = SKAction.colorize(with: .white, colorBlendFactor: 0.0, duration: 0.12)
-        let seq = SKAction.sequence([flash, unflash])
-        run(seq) {
-            completion()
-        }
-    }
 }

@@ -4,7 +4,8 @@
 
 import SpriteKit
 
-class SoundManager {
+// final: subclass'lanma engellenir, derleyici static dispatch kullanır — minor performans iyileştirmesi
+final class SoundManager {
     static let shared = SoundManager()
 
     // Ses açık/kapalı — ileride ayarlar eklenirse diye

@@ -207,7 +207,11 @@ final class ShapeDispenser {
             filtrelenmisHavuz = havuz.isEmpty ? Array(BlockShapeType.allCases) : havuz
         }
 
-        return filtrelenmisHavuz.randomElement()!
+        // Güvenli seçim: havuz boşsa tüm şekillerden rastgele seç — crash önlenir
+        guard let secilen = filtrelenmisHavuz.randomElement() else {
+            return BlockShapeType.allCases.randomElement() ?? .single
+        }
+        return secilen
     }
 
     // MARK: - Geçmiş Yönetimi
@@ -316,7 +320,10 @@ extension BlockShape {
     /// Tip'e göre tanımlı BlockShape nesnesini döndürür.
     /// ShapeDispenser içinde tip seçildikten sonra nesneye dönüştürmek için kullanılır.
     static func shape(for type: BlockShapeType) -> BlockShape {
-        // all listesinde her tip kesinlikle var — force unwrap güvenli
-        return all.first { $0.type == type }!
+        // Güvenli arama: yeni type eklenip all'a eklenmezse crash yerine varsayılan döner
+        guard let shape = all.first(where: { $0.type == type }) else {
+            return all[0]
+        }
+        return shape
     }
 }

@@ -9,7 +9,7 @@
 // - clearHighlight sadece highlight edilen hücreleri sıfırlar: performans için
 
 import SpriteKit
-import UIKit
+// import UIKit kaldırıldı — SpriteKit zaten UIKit'i dahil eder, duplicate import gereksiz
 
 // MARK: - GameScene
 
@@ -370,8 +370,8 @@ final class GameScene: SKScene, SafeAreaUpdatable {
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         if manager.state == .gameOver { return }
-        guard draggedPiece != nil else { return }
-        let piece = draggedPiece!
+        // guard let kullanımı: force unwrap yerine güvenli açma — crash önlenir
+        guard let piece = draggedPiece else { return }
 
         let dropLocation = piece.position
 
