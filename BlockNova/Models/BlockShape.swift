@@ -12,9 +12,12 @@ enum BlockShapeType: String, CaseIterable {
     case single      = "single"
     case horizontal2 = "horizontal2"
     case horizontal3 = "horizontal3"
+    case horizontal4 = "horizontal4"
     case vertical2   = "vertical2"
     case vertical3   = "vertical3"
+    case vertical4   = "vertical4"
     case square2x2   = "square2x2"
+    case rect2x3     = "rect2x3"
     case square3x3   = "square3x3"  // 3x3 tam kare — 9 hücre, en büyük şekil
     case lShape      = "lShape"
     case jShape      = "jShape"
@@ -62,6 +65,11 @@ extension BlockShape {
                    offsets: [(0,0),(0,1),(0,2)],
                    color: C.colorH3),
 
+        // 4'lü yatay — uzun satır boşlukları için güçlü parça
+        BlockShape(type: .horizontal4,
+                   offsets: [(0,0),(0,1),(0,2),(0,3)],
+                   color: C.colorH4),
+
         // 2'li dikey — dar sütunları doldurur
         BlockShape(type: .vertical2,
                    offsets: [(0,0),(1,0)],
@@ -72,10 +80,21 @@ extension BlockShape {
                    offsets: [(0,0),(1,0),(2,0)],
                    color: C.colorV3),
 
+        // 4'lü dikey — uzun sütun boşlukları için güçlü parça
+        BlockShape(type: .vertical4,
+                   offsets: [(0,0),(1,0),(2,0),(3,0)],
+                   color: C.colorV4),
+
         // 2x2 kare — köşe/alan doldurma
         BlockShape(type: .square2x2,
                    offsets: [(0,0),(0,1),(1,0),(1,1)],
                    color: C.colorSquare),
+
+        // 2x3 dikdörtgen — alan doldurma için orta zorlukta parça
+        BlockShape(type: .rect2x3,
+                   offsets: [(0,0),(0,1),(0,2),
+                             (1,0),(1,1),(1,2)],
+                   color: C.colorRect2x3),
 
         // 3x3 tam dolu kare — 9 hücre, en büyük ve en yüksek skorlu şekil
         // Satır+sütun kombinasyonları silerse muazzam combo yapılabilir

@@ -66,6 +66,8 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     private var originalPosition: CGPoint = .zero
     /// Son highlight edilen anchor hücre — gereksiz iş yapmamak için
     private var lastHighlightAnchor: (row: Int, col: Int)? = nil
+    /// Son touch konumu — küçük hareketleri elemek için
+    private var lastTouchLocation: CGPoint? = nil
 
     // MARK: - Sahne Kurulumu
 
@@ -351,6 +353,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         // Anlık konum ataması — gecikme hissi olmadan parça parmağa yapışır
         selected.position   = CGPoint(x: location.x + dragOffset.x, y: location.y + dragOffset.y)
         lastHighlightAnchor = nil
+        lastTouchLocation   = location
         updateHighlight(for: selected)
     }
 
@@ -361,6 +364,13 @@ final class GameScene: SKScene, SafeAreaUpdatable {
               let piece = draggedPiece else { return }
 
         let location = touch.location(in: self)
+        if let last = lastTouchLocation {
+            let dx = location.x - last.x
+            let dy = location.y - last.y
+            let dist = sqrt(dx * dx + dy * dy)
+            if dist < C.dragMinDistance { return }
+        }
+        lastTouchLocation = location
         // DOĞRUDAN position ataması — SKAction gecikme yaratır
         piece.position = CGPoint(x: location.x + dragOffset.x, y: location.y + dragOffset.y)
         updateHighlight(for: piece)
@@ -379,26 +389,32 @@ final class GameScene: SKScene, SafeAreaUpdatable {
            gridNode.canPlace(piece.shape, at: row, col: col) {
             placePiece(piece, at: row, col: col)
         } else {
-            cancelDrag(for: piece)
+            cancelDrag(for: piece, playInvalidSound: true)
         }
 
         gridNode.clearHighlight()
         lastHighlightAnchor = nil
         draggedPiece        = nil
+        lastTouchLocation   = nil
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         if let piece = draggedPiece {
             gridNode.clearHighlight()
             lastHighlightAnchor = nil
-            cancelDrag(for: piece)
+            cancelDrag(for: piece, playInvalidSound: false)
             draggedPiece = nil
+            lastTouchLocation = nil
         }
     }
 
     // MARK: - Sürükleme Yardımcıları
 
-    private func cancelDrag(for piece: PieceNode) {
+    private func cancelDrag(for piece: PieceNode, playInvalidSound: Bool) {
+        if playInvalidSound {
+            HapticManager.impact(.light)
+            SoundManager.shared.playInvalid(on: self)
+        }
         piece.cancelDrag()
     }
 
@@ -417,7 +433,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         let positions: [(row: Int, col: Int)] = piece.normalizedOffsets.map {
             (row: row + $0.row, col: col + $0.col)
         }
-        let valid = gridNode.canPlace(piece.shape, at: row, col: col)
+        let valid = gridNode.canPlace(normalizedOffsets: piece.normalizedOffsets, at: row, col: col)
         gridNode.highlight(positions: positions, valid: valid)
     }
 
@@ -508,6 +524,9 @@ extension GameScene: GridDelegate {
         HapticManager.impact(.heavy)
         // Çizgi temizlenince long-pop sesi çal
         SoundManager.shared.playClear(on: self)
+        if count >= 2 {
+            SoundManager.shared.playCombo(on: self)
+        }
         showLineClearEffect(count: count)
     }
 
@@ -609,4 +628,3 @@ extension GameScene: GameManagerDelegate {
         ]))
     }
 }
-

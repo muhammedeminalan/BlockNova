@@ -135,7 +135,8 @@ final class PieceNode: SKNode {
         // Onizleme boyutundan (previewCellSize) grid boyutuna (cellSize) olcekle
         // targetScale = cellSize / previewCellSize
         let targetScale = C.cellSize / C.previewCellSize
-        setScale(targetScale)
+        setScale(targetScale * C.dragLiftScale)
+        alpha = 0.98
     }
 
     // MARK: - Surukleme Iptali
@@ -146,6 +147,7 @@ final class PieceNode: SKNode {
     func cancelDrag(completion: (() -> Void)? = nil) {
         isDragging = false
         zPosition  = C.zPiece
+        alpha      = 1.0
 
         let moveBack  = SKAction.move(to: homePosition, duration: 0.18)
         moveBack.timingMode = .easeOut

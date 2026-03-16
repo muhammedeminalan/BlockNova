@@ -117,12 +117,17 @@ final class GameManager {
         player.authenticateHandler = { vc, error in
             if let vc = vc {
                 // Apple'ın standart Game Center giriş ekranını göster
-                viewController.present(vc, animated: true)
+                DispatchQueue.main.async {
+                    viewController.present(vc, animated: true)
+                }
             } else if player.isAuthenticated {
                 // Giriş başarılı — kullanıcı adını logla
                 print("Game Center giriş başarılı: \(player.displayName)")
             }
             // Giriş reddedilirse ya da hata oluşursa sessizce devam et — crash olmaz
+            if let error = error {
+                print("Game Center auth hatası: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -136,7 +141,7 @@ final class GameManager {
             score,
             context: 0,
             player: GKLocalPlayer.local,
-            leaderboardIDs: ["com.novablock.highscore"]
+            leaderboardIDs: [C.leaderboardID]
         ) { error in
             if let error = error {
                 // Hata sessizce loglanır — kullanıcı deneyimini bozmaz
@@ -149,16 +154,21 @@ final class GameManager {
     /// viewController: GKGameCenterViewController üzerinde gösterilecek controller
     static func showLeaderboard(from viewController: UIViewController) {
         // Kullanıcı giriş yapmamışsa gösterme — boş ekran açılmaz
-        guard GKLocalPlayer.local.isAuthenticated else { return }
+        guard GKLocalPlayer.local.isAuthenticated else {
+            authenticateGameCenter(from: viewController)
+            return
+        }
 
         let vc = GKGameCenterViewController(
-            leaderboardID: "com.novablock.highscore",
+            leaderboardID: C.leaderboardID,
             playerScope: .global,   // Tüm oyuncular — sadece arkadaşlar değil
             timeScope: .allTime     // Tüm zamanlar — haftalık değil
         )
         // Delegate olarak geçirilen controller, ekran kapatmayı yönetir
         vc.gameCenterDelegate = viewController as? GKGameCenterControllerDelegate
-        viewController.present(vc, animated: true)
+        DispatchQueue.main.async {
+            viewController.present(vc, animated: true)
+        }
     }
 
     // MARK: - Özel Yardımcı

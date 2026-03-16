@@ -110,7 +110,8 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
             C.colorSingle, C.colorH2, C.colorH3,
             C.colorV2,     C.colorV3, C.colorSquare,
             C.colorL,      C.colorJ,  C.colorT,
-            C.colorS,      C.colorZ
+            C.colorS,      C.colorZ,
+            C.colorH4,     C.colorV4, C.colorRect2x3
         ]
 
         for i in 0..<22 {

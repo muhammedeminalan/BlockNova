@@ -210,6 +210,18 @@ final class GridNode: SKNode {
         return true
     }
 
+    /// Normalize offset ile hizli kontrol — drag sırasında performans için.
+    /// normalizedOffsets: minRow/minCol sıfırlanmış olmalı.
+    func canPlace(normalizedOffsets: [(row: Int, col: Int)], at row: Int, col: Int) -> Bool {
+        for offset in normalizedOffsets {
+            let r = row + offset.row
+            let c = col + offset.col
+            guard isValid(row: r, col: c) else { return false }
+            if cellColors[r][c] != nil { return false }
+        }
+        return true
+    }
+
     // MARK: - Yerlestirme
 
     /// Sekli izgara uzerine yerlestirir: veri gunceller, gorsel gunceller, animasyon oynatir.
