@@ -326,6 +326,8 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         }
         guard manager.state == .playing,
               let touch = touches.first else { return }
+        // Aktif sürükleme varken yeni piece seçme — ownership sabit kalsın
+        guard draggedPiece == nil else { return }
 
         let location = touch.location(in: self)
         let hitNode  = atPoint(location)
@@ -337,7 +339,10 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         else if let p = hitNode.parent?.parent as? PieceNode  { piece = p }
 
         guard let selected = piece,
-              trayPieces.contains(where: { $0 === selected }) else { return }
+              trayPieces.contains(where: { $0 === selected }) else {
+            lastTouchLocation = nil
+            return
+        }
 
         draggedPiece     = selected
         originalPosition = selected.position

@@ -124,8 +124,15 @@ enum C {
     static let colorZ           = UIColor(hex: "#D774FF") // Orkide
     static let colorSquare3     = UIColor(hex: "#FF3D5A") // Ateş kırmızısı — 3x3 en büyük blok
     static let colorH4          = UIColor(hex: "#00C2FF") // Uzun yatay (4)
+    static let colorH5          = UIColor(hex: "#2ACBFF") // Uzun yatay (5)
     static let colorV4          = UIColor(hex: "#6DD400") // Uzun dikey (4)
+    static let colorV5          = UIColor(hex: "#4CD137") // Uzun dikey (5)
     static let colorRect2x3     = UIColor(hex: "#FFB347") // 2x3 dikdörtgen
+    static let colorRect3x2     = UIColor(hex: "#FFA24B") // 3x2 dikdörtgen
+    static let colorMiniL       = UIColor(hex: "#FF6BCB") // Mini L
+    static let colorMiniJ       = UIColor(hex: "#4DE2FF") // Mini J
+    static let colorCorner      = UIColor(hex: "#9C7CFF") // Corner
+    static let colorSmallT      = UIColor(hex: "#FFC857") // Small T
 
     // MARK: - Font
     // Tipografi tutarliligi icin merkezi font adlari
