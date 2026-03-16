@@ -143,6 +143,13 @@ enum C {
     static let colorCorner      = UIColor(hex: "#9C7CFF") // Corner
     static let colorSmallT      = UIColor(hex: "#FFC857") // Small T
 
+    // MARK: - Scoring
+    static let scoreCellBase: Int = 2
+    static let scoreLineBase: Int = 20
+    static let scoreLineBonus2: Int = 30
+    static let scoreLineBonus3Plus: Int = 60
+    static let scoreLineBonusPerExtra: Int = 20
+
     // MARK: - Font
     // Tipografi tutarliligi icin merkezi font adlari
     static let fontBold   = "AvenirNext-Bold"

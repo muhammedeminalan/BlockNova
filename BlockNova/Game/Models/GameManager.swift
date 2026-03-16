@@ -60,21 +60,24 @@ final class GameManager {
         addPoints(points)
     }
 
-    /// Hücre yerleştirme skoru: her hücre 1 puan
-    /// Yeterince basit, spam yerleştirmeyi ödüllendirmez
+    /// Hücre yerleştirme skoru: her hücre daha tatmin edici puan verir
+    /// Oyun ekonomisini şişirmeden ödül hissini artırır
     func addScore(forCells count: Int) {
-        addPoints(count)
+        addPoints(count * C.scoreCellBase)
     }
 
-    /// Çizgi temizleme skoru — combo bonusu ile artar:
-    /// 1 çizgi: 10, 2 çizgi: 10+25=35, 3+ çizgi: n*10+50
+    /// Çizgi temizleme skoru — multi-clear ödülü daha belirgin
+    /// 1 çizgi: base, 2 çizgi: base + bonus, 3+ çizgi: base + artan bonus
     func addScore(forLines count: Int) {
-        let base  = count * 10
+        let base = count * C.scoreLineBase
         let bonus: Int
         switch count {
-        case 1:  bonus = 0
-        case 2:  bonus = 25
-        default: bonus = 50   // 3 veya daha fazla — combo ödülü
+        case 1:
+            bonus = 0
+        case 2:
+            bonus = C.scoreLineBonus2
+        default:
+            bonus = C.scoreLineBonus3Plus + (count - 3) * C.scoreLineBonusPerExtra
         }
         addPoints(base + bonus)
     }
