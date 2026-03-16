@@ -68,6 +68,15 @@ enum C {
     // 0.82 oran: parcalar buyuk gorunur ama panelde tasma yapmaz
     static var previewCellSize: CGFloat { cellSize * 0.82 }
 
+    // MARK: - Preview Slot
+    static var previewSlotSize: CGSize {
+        CGSize(width: screenW / 3, height: bottomPanelHeight * 0.78)
+    }
+    static let previewSlotPaddingFactor: CGFloat = 0.12
+    static let previewScaleMin: CGFloat = 0.60
+    static let previewScaleMax: CGFloat = 1.15
+    static let previewScaleTransition: TimeInterval = 0.08
+
     // MARK: - Surukleme
     // Parmak parcayi kapatmasin diye sabit yukari ofset — hucre boyutuna gore hesaplanir
     // Sabit ofset kullanmak, parmak nereye dokunsa da parcayi gorunur tutar
