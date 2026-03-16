@@ -37,10 +37,21 @@ final class HapticManager {
         DispatchQueue.main.async {
             // Cache'lenmiş generator'dan çal — yeni instance oluşturulmaz
             switch style {
-            case .light:  shared.lightGen.impactOccurred()
-            case .medium: shared.mediumGen.impactOccurred()
-            case .heavy:  shared.heavyGen.impactOccurred()
-            @unknown default: shared.mediumGen.impactOccurred()
+            case .light:
+                shared.lightGen.impactOccurred()
+            case .medium:
+                shared.mediumGen.impactOccurred()
+            case .heavy:
+                shared.heavyGen.impactOccurred()
+            case .soft:
+                // Map to the closest available generator; soft ~ light
+                shared.lightGen.impactOccurred()
+            case .rigid:
+                // Map to the closest available generator; rigid ~ heavy
+                shared.heavyGen.impactOccurred()
+            @unknown default:
+                // Safe fallback to a neutral medium impact for any future cases
+                shared.mediumGen.impactOccurred()
             }
         }
     }
