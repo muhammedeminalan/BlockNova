@@ -41,6 +41,9 @@ final class PieceNode: SKNode {
     /// Surukleme aktif mi? — touchesMoved sadece aktif parcayi tasir
     var isDragging: Bool = false
 
+    /// Preview slot icin hesaplanan scale — drag iptalinde buraya donulur
+    private var previewScale: CGFloat = 1.0
+
     // MARK: - Init
 
     /// shape: hangi blok sekli
@@ -135,7 +138,10 @@ final class PieceNode: SKNode {
         // Onizleme boyutundan (previewCellSize) grid boyutuna (cellSize) olcekle
         // targetScale = cellSize / previewCellSize
         let targetScale = C.cellSize / C.previewCellSize
-        setScale(targetScale)
+        let target = targetScale * C.dragLiftScale
+        removeAction(forKey: "scaleTransition")
+        run(SKAction.scale(to: target, duration: C.previewScaleTransition), withKey: "scaleTransition")
+        alpha = 0.98
     }
 
     // MARK: - Surukleme Iptali
@@ -146,14 +152,38 @@ final class PieceNode: SKNode {
     func cancelDrag(completion: (() -> Void)? = nil) {
         isDragging = false
         zPosition  = C.zPiece
+        alpha      = 1.0
 
         let moveBack  = SKAction.move(to: homePosition, duration: 0.18)
         moveBack.timingMode = .easeOut
-        // Scale 1.0'a don: child node'lar previewCellSize ile olusturuldu
-        // setScale(1.0) = onizleme boyutu → dogru tepsi boyutu
-        let scaleBack = SKAction.scale(to: 1.0, duration: 0.18)
+        // Scale previewScale'e don: slot icindeki orijinal boyut
+        let scaleBack = SKAction.scale(to: previewScale, duration: 0.18)
         run(SKAction.group([moveBack, scaleBack])) {
             completion?()
+        }
+    }
+
+    // MARK: - Preview Ölçekleme
+
+    /// Slot boyutuna göre preview scale hesaplar ve uygular.
+    /// Drag başlamadan önce çağrılmalı — preview'da taşma olmaz.
+    func applyPreviewScale(slotSize: CGSize) {
+        let paddingFactor = C.previewSlotPaddingFactor
+        let availableW = slotSize.width * (1.0 - paddingFactor)
+        let availableH = slotSize.height * (1.0 - paddingFactor)
+
+        let baseW = CGFloat(shape.colSpan) * C.previewCellSize
+        let baseH = CGFloat(shape.rowSpan) * C.previewCellSize
+        guard baseW > 0, baseH > 0 else { return }
+
+        let scaleW = availableW / baseW
+        let scaleH = availableH / baseH
+        let target = min(scaleW, scaleH)
+        previewScale = max(C.previewScaleMin, min(C.previewScaleMax, target))
+
+        if !isDragging {
+            removeAction(forKey: "scaleTransition")
+            setScale(previewScale)
         }
     }
 

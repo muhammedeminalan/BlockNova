@@ -36,6 +36,8 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     private var shapeDispenser: ShapeDispenser!
     /// Alt tepsi — 3 parça slotu, nil = boş slot
     var trayPieces: [PieceNode?] = [nil, nil, nil]
+    /// Preview slotları — hit-test ve yerleşim için
+    var previewSlots: [PreviewSlotNode] = []
 
     // MARK: - Üst Panel Node'ları
 
@@ -66,6 +68,8 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     private var originalPosition: CGPoint = .zero
     /// Son highlight edilen anchor hücre — gereksiz iş yapmamak için
     private var lastHighlightAnchor: (row: Int, col: Int)? = nil
+    /// Son touch konumu — küçük hareketleri elemek için
+    private var lastTouchLocation: CGPoint? = nil
 
     // MARK: - Sahne Kurulumu
 
@@ -176,15 +180,16 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     /// Verilen şekilleri tepsi slotlarına yerleştirir.
     /// dealNewPieces ile aynı mantık — şekiller dışarıdan gelir.
     private func tepsiyeYerlestir(_ sekiller: [BlockShape]) {
-        let slotGenisligi = C.screenW / 3
-        let ortaY         = safeAreaFrame.minY + C.bottomPanelHeight * 0.50
-
         for (i, sekil) in sekiller.prefix(3).enumerated() {
             let parca          = PieceNode(shape: sekil)
             parca.slotIndex    = i
-            let hedefX         = slotGenisligi * CGFloat(i) + slotGenisligi / 2
-            parca.position     = CGPoint(x: hedefX, y: ortaY)
-            parca.homePosition = parca.position
+            if i < previewSlots.count {
+                let slot = previewSlots[i]
+                parca.position     = slot.position
+                parca.homePosition = slot.position
+                slot.piece         = parca
+                parca.applyPreviewScale(slotSize: slot.size)
+            }
             parca.zPosition    = C.zPiece
             parca.alpha        = 0
             addChild(parca)
@@ -281,6 +286,17 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         let sep = makeSeparator(y: C.bottomPanelHeight)
         addChild(sep)
         bottomPanelSeparator = sep
+
+        setupPreviewSlots()
+    }
+
+    private func setupPreviewSlots() {
+        if !previewSlots.isEmpty { return }
+        for i in 0..<3 {
+            let slot = PreviewSlotNode(index: i, size: C.previewSlotSize)
+            addChild(slot)
+            previewSlots.append(slot)
+        }
     }
 
     // MARK: - Parça Dağıtma
@@ -290,15 +306,17 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     func dealNewPieces() {
         // Grid durumunu ilet: ShapeDispenser neredeyse dolu satır/sütun olduğunu bilsin
         let shapes   = shapeDispenser.ucunu(grid: gridNode.cellColors)
-        let slotWidth = C.screenW / 3
-        let midY      = safeAreaFrame.minY + C.bottomPanelHeight * 0.50
 
         for (i, shape) in shapes.enumerated() {
             let piece = PieceNode(shape: shape)
             piece.slotIndex    = i
-            let targetX        = slotWidth * CGFloat(i) + slotWidth / 2
-            piece.position     = CGPoint(x: targetX, y: midY)
-            piece.homePosition = piece.position
+            if i < previewSlots.count {
+                let slot = previewSlots[i]
+                piece.position     = slot.position
+                piece.homePosition = slot.position
+                slot.piece         = piece
+                piece.applyPreviewScale(slotSize: slot.size)
+            }
             piece.zPosition    = C.zPiece
             piece.alpha        = 0
             addChild(piece)
@@ -324,18 +342,23 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         }
         guard manager.state == .playing,
               let touch = touches.first else { return }
+        // Aktif sürükleme varken yeni piece seçme — ownership sabit kalsın
+        guard draggedPiece == nil else { return }
+        // Aktif sürükleme varken yeni piece seçme — ownership sabit kalsın
+        guard draggedPiece == nil else { return }
 
         let location = touch.location(in: self)
-        let hitNode  = atPoint(location)
-
-        // PieceNode'u bul — child'a (SKSpriteNode) dokunulmuş olabilir
-        var piece: PieceNode? = nil
-        if let p = hitNode as? PieceNode                      { piece = p }
-        else if let p = hitNode.parent as? PieceNode          { piece = p }
-        else if let p = hitNode.parent?.parent as? PieceNode  { piece = p }
-
-        guard let selected = piece,
-              trayPieces.contains(where: { $0 === selected }) else { return }
+        let selectedSlot = previewSlots.first { slot in
+            slot.calculateAccumulatedFrame().contains(location)
+        }
+        guard let slot = selectedSlot, let selected = slot.piece else {
+            lastTouchLocation = nil
+            return
+        }
+        guard trayPieces.contains(where: { $0 === selected }) else {
+            lastTouchLocation = nil
+            return
+        }
 
         draggedPiece     = selected
         originalPosition = selected.position
@@ -351,6 +374,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         // Anlık konum ataması — gecikme hissi olmadan parça parmağa yapışır
         selected.position   = CGPoint(x: location.x + dragOffset.x, y: location.y + dragOffset.y)
         lastHighlightAnchor = nil
+        lastTouchLocation   = location
         updateHighlight(for: selected)
     }
 
@@ -361,6 +385,13 @@ final class GameScene: SKScene, SafeAreaUpdatable {
               let piece = draggedPiece else { return }
 
         let location = touch.location(in: self)
+        if let last = lastTouchLocation {
+            let dx = location.x - last.x
+            let dy = location.y - last.y
+            let dist = sqrt(dx * dx + dy * dy)
+            if dist < C.dragMinDistance { return }
+        }
+        lastTouchLocation = location
         // DOĞRUDAN position ataması — SKAction gecikme yaratır
         piece.position = CGPoint(x: location.x + dragOffset.x, y: location.y + dragOffset.y)
         updateHighlight(for: piece)
@@ -379,26 +410,32 @@ final class GameScene: SKScene, SafeAreaUpdatable {
            gridNode.canPlace(piece.shape, at: row, col: col) {
             placePiece(piece, at: row, col: col)
         } else {
-            cancelDrag(for: piece)
+            cancelDrag(for: piece, playInvalidSound: true)
         }
 
         gridNode.clearHighlight()
         lastHighlightAnchor = nil
         draggedPiece        = nil
+        lastTouchLocation   = nil
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         if let piece = draggedPiece {
             gridNode.clearHighlight()
             lastHighlightAnchor = nil
-            cancelDrag(for: piece)
+            cancelDrag(for: piece, playInvalidSound: false)
             draggedPiece = nil
+            lastTouchLocation = nil
         }
     }
 
     // MARK: - Sürükleme Yardımcıları
 
-    private func cancelDrag(for piece: PieceNode) {
+    private func cancelDrag(for piece: PieceNode, playInvalidSound: Bool) {
+        if playInvalidSound {
+            HapticManager.impact(.light)
+            SoundManager.shared.playInvalid(on: self)
+        }
         piece.cancelDrag()
     }
 
@@ -417,7 +454,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         let positions: [(row: Int, col: Int)] = piece.normalizedOffsets.map {
             (row: row + $0.row, col: col + $0.col)
         }
-        let valid = gridNode.canPlace(piece.shape, at: row, col: col)
+        let valid = gridNode.canPlace(normalizedOffsets: piece.normalizedOffsets, at: row, col: col)
         gridNode.highlight(positions: positions, valid: valid)
     }
 
@@ -432,6 +469,9 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         // gridDidFinishPlacement'ı senkron çağırır. Slot nil yapılmamışsa tepsi
         // "hâlâ dolu" görünür ve dealNewPieces hiç tetiklenmez.
         trayPieces[piece.slotIndex] = nil
+        if piece.slotIndex < previewSlots.count {
+            previewSlots[piece.slotIndex].piece = nil
+        }
         gridNode.place(piece.shape, at: row, col: col)
 
         piece.playPlaceAnimation { piece.removeFromParent() }
@@ -462,6 +502,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         trayPieces.forEach { $0?.removeFromParent() }
         trayPieces   = [nil, nil, nil]
         draggedPiece = nil
+        previewSlots.forEach { $0.piece = nil }
 
         gridNode.reset()
         manager.reset()
@@ -504,6 +545,9 @@ extension GameScene: GridDelegate {
         HapticManager.impact(.heavy)
         // Çizgi temizlenince long-pop sesi çal
         SoundManager.shared.playClear(on: self)
+        if count >= 2 {
+            SoundManager.shared.playCombo(on: self)
+        }
         showLineClearEffect(count: count)
     }
 
@@ -620,4 +664,3 @@ extension GameScene: GameManagerDelegate {
         ]))
     }
 }
-

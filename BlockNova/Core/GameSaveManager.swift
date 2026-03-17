@@ -13,9 +13,7 @@
 // - Game Over olunca kaydı sil
 
 import UIKit
-
 // MARK: - Kaydedilecek Veri Yapısı
-
 /// Codable: JSONEncoder/JSONDecoder ile UserDefaults'a yazılır/okunur
 struct SavedGameState: Codable {
     /// Mevcut tur skoru

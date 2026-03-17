@@ -60,6 +60,56 @@ final class ShapeDispenser {
     /// 5/8 = %62.5 doluluk — çok erken ipucu verme, çok geç de kalma
     private let gridIpucuEsigi = 5
 
+    /// Son turlarda tekrar eden tipler için ağırlık düşürme katsayısı
+    /// 0.5 = tekrar eden tipin seçilme şansı yarıya düşer
+    private let tekrarAzaltmaKatsayisi: Double = 0.5
+
+    /// Aynı kategori tekrarını azaltma katsayısı
+    /// 0.65 = aynı kategorideki parça tekrar ederse ağırlık düşer
+    private let kategoriAzaltmaKatsayisi: Double = 0.65
+
+    /// Grid doluluğu bu eşiği aşarsa küçük/yardımcı parçalara hafif ağırlık ekle
+    private let crowdingHelperThreshold: Double = 0.62
+
+    /// Yardımcı parça bias katsayısı — düşük tutulur, bariz kıyak hissi vermez
+    private let crowdingHelperBoost: Double = 1.15
+
+    // MARK: - Production Havuzları
+
+    /// Production pool — Block Blast hissine yakın set
+    private let productionPool: [BlockShapeType] = [
+        .single,
+        .horizontal2, .horizontal3, .horizontal4, .horizontal5,
+        .vertical2, .vertical3, .vertical4, .vertical5,
+        .square2x2, .square3x3, .rect2x3, .rect3x2,
+        .miniL, .miniJ, .lShape, .jShape, .cornerShape,
+        .smallT, .tShape,
+        .sShape, .zShape
+    ]
+
+    /// Sıklık havuzları — ağırlıklandırma için
+    private let commonPool: Set<BlockShapeType> = [
+        .single, .horizontal2, .horizontal3, .vertical2, .vertical3, .square2x2, .miniL, .miniJ
+    ]
+
+    private let uncommonPool: Set<BlockShapeType> = [
+        .horizontal4, .vertical4, .rect2x3, .rect3x2, .smallT, .lShape, .jShape, .sShape, .zShape, .cornerShape
+    ]
+
+    private let rarePool: Set<BlockShapeType> = [
+        .horizontal5, .vertical5, .square3x3, .tShape
+    ]
+
+    /// Yardımcı parça havuzu — grid sıkışınca hafif bias alır
+    private let helperPool: Set<BlockShapeType> = [
+        .single, .horizontal2, .horizontal3, .vertical2, .vertical3, .square2x2, .miniL, .miniJ
+    ]
+
+    /// Tip → kategori map'i — tekrar penaltesi için
+    private lazy var categoryMap: [BlockShapeType: ShapeCategory] = {
+        Dictionary(uniqueKeysWithValues: BlockShape.all.map { ($0.type, $0.category) })
+    }()
+
     // MARK: - Durum
 
     /// Son üretilen şekil tiplerinin geçmişi — tekrar önleme için kayan pencere
@@ -75,7 +125,7 @@ final class ShapeDispenser {
             return guvenliUret(grid: grid)
         }
         // Grid bilgisi yoksa (ilk tur gibi durumlarda) dengeli set üret
-        return dengeliSet(hint: .any)
+        return dengeliSet(hint: .any, fitMap: [:], crowding: 0)
     }
 
     /// Yeni oyun başladığında geçmiş temizlenir — taze başlangıç sağlanır
@@ -88,8 +138,10 @@ final class ShapeDispenser {
     /// Üretilen parçaların grid'e sığıp sığmadığını kontrol eder.
     /// Hiçbiri sığmıyorsa küçük parçalar döndürülür — oyuncuya son şans.
     private func guvenliUret(grid: [[UIColor?]]) -> [BlockShape] {
-        let hint   = gridiAnalizeEt(grid)
-        let parcalar = dengeliSet(hint: hint)
+        let hint     = gridiAnalizeEt(grid)
+        let fitMap   = fitCountMap(grid)
+        let crowding = gridCrowdingFactor(grid)
+        let parcalar = dengeliSet(hint: hint, fitMap: fitMap, crowding: crowding)
 
         // Üretilen parçalardan en az biri grid'e sığıyor mu?
         let herhangiiBirisigiyorMu = parcalar.contains { parca in
@@ -114,19 +166,19 @@ final class ShapeDispenser {
 
     /// 3'lü sette 1 küçük + 1 büyük + 1 hint parçası bulunur.
     /// Sıra karıştırılır — her zaman küçük, büyük, hint değil, rastgele sıralı gelir.
-    private func dengeliSet(hint: GenerationHint) -> [BlockShape] {
-        // Küçük parça: her yere sığar, nefes aldırır
-        let kucukTip  = kucukHavuzdan()
+    private func dengeliSet(hint: GenerationHint, fitMap: [BlockShapeType: Int], crowding: Double) -> [BlockShape] {
+        // Küçük parça: nefes aldırır
+        let kucukTip   = sec(kucukler: true, fitMap: fitMap, kacinilacaklar: [], crowding: crowding)
         let kucukParca = BlockShape.shape(for: kucukTip)
         recenteEkle(kucukTip)
 
-        // Büyük parça: yüksek skor potansiyeli, meydan okur
-        let buyukTip  = buyukHavuzdan(kacinilacak: kucukTip)
+        // Büyük parça: meydan okur
+        let buyukTip   = sec(kucukler: false, fitMap: fitMap, kacinilacaklar: [kucukTip], crowding: crowding)
         let buyukParca = BlockShape.shape(for: buyukTip)
         recenteEkle(buyukTip)
 
         // Hint parçası: grid'in anlık durumuna göre seçilir
-        let hintTip   = hintHavuzdan(hint: hint, kacinilacaklar: [kucukTip, buyukTip])
+        let hintTip    = hintHavuzdan(hint: hint, kacinilacaklar: [kucukTip, buyukTip], fitMap: fitMap, crowding: crowding)
         let hintParca  = BlockShape.shape(for: hintTip)
         recenteEkle(hintTip)
 
@@ -138,27 +190,25 @@ final class ShapeDispenser {
 
     /// Küçük parça havuzundan tekrar kuralına uyan bir tip seçer.
     /// Küçük parçalar: single, horizontal2, vertical2
-    private func kucukHavuzdan() -> BlockShapeType {
-        let kucukler: [BlockShapeType] = [.single, .horizontal2, .vertical2]
-        return tekrarsizSec(from: kucukler, kacinilacaklar: [])
-    }
-
-    /// Büyük parça havuzundan seçer. Küçük parça ile aynı olmasın.
-    /// Büyük parçalar: 4+ hücreli veya 2D şekiller
-    /// square3x3 de buraya dahil — nadir gelir ama gelince yüksek puan potansiyeli
-    private func buyukHavuzdan(kacinilacak: BlockShapeType) -> BlockShapeType {
-        let buyukler: [BlockShapeType] = [
-            .square2x2, .square3x3, .lShape, .jShape, .tShape,
-            .sShape, .zShape, .horizontal3, .vertical3
+    private func sec(kucukler: Bool,
+                     fitMap: [BlockShapeType: Int],
+                     kacinilacaklar: [BlockShapeType],
+                     crowding: Double) -> BlockShapeType {
+        let kucukHavuz: [BlockShapeType] = [
+            .single, .horizontal2, .horizontal3, .vertical2, .vertical3, .square2x2, .miniL, .miniJ
         ]
-        return tekrarsizSec(from: buyukler, kacinilacaklar: [kacinilacak])
+        let buyukHavuz: [BlockShapeType] = productionPool.filter { !kucukHavuz.contains($0) }
+        let havuz = kucukler ? kucukHavuz : buyukHavuz
+        return agirlikliSec(from: havuz, kacinilacaklar: kacinilacaklar, fitMap: fitMap, crowding: crowding)
     }
 
     /// Hint'e göre yön uyumlu tip seçer. Seçilen diğerleriyle aynı olabilir.
-    private func hintHavuzdan(hint: GenerationHint, kacinilacaklar: [BlockShapeType]) -> BlockShapeType {
+    private func hintHavuzdan(hint: GenerationHint,
+                              kacinilacaklar: [BlockShapeType],
+                              fitMap: [BlockShapeType: Int],
+                              crowding: Double) -> BlockShapeType {
         let havuz = hintIcinHavuz(hint)
-        // Hint havuzunda kaçınılacak yoksa istediğini seç — hint öncelikli
-        return tekrarsizSec(from: havuz, kacinilacaklar: kacinilacaklar)
+        return agirlikliSec(from: havuz, kacinilacaklar: kacinilacaklar, fitMap: fitMap, crowding: crowding)
     }
 
     /// Hint türüne göre uygun şekil havuzunu döndürür.
@@ -168,13 +218,13 @@ final class ShapeDispenser {
         switch hint {
         case .horizontal:
             // Satır tamamlamada işe yarayan yatay ağırlıklı şekiller
-            return [.horizontal2, .horizontal3, .tShape, .sShape, .zShape]
+            return [.horizontal2, .horizontal3, .horizontal4, .horizontal5, .rect3x2, .tShape, .smallT, .sShape, .zShape]
         case .vertical:
             // Sütun tamamlamada işe yarayan dikey ağırlıklı şekiller
-            return [.vertical2, .vertical3, .lShape, .jShape]
+            return [.vertical2, .vertical3, .vertical4, .vertical5, .rect2x3, .lShape, .jShape, .miniL, .miniJ, .cornerShape]
         case .any:
             // Yön fark etmez — tüm şekiller eşit şanslı
-            return Array(BlockShapeType.allCases)
+            return productionPool
         }
     }
 
@@ -182,36 +232,75 @@ final class ShapeDispenser {
 
     /// Verilen havuzdan tekrar kuralına ve kaçınılacak listeye göre seçim yapar.
     /// Uygun aday bulunamazsa kısıtı kaldırarak rastgele seçer — hiç takılmaz.
-    private func tekrarsizSec(from havuz: [BlockShapeType],
-                               kacinilacaklar: [BlockShapeType]) -> BlockShapeType {
-        // Tekrar engelini uygula: son 2'si aynıysa o tipi çıkar
-        var filtrelenmisHavuz = havuz.filter { tip in
-            // Bu tip kaçınılacaklar listesinde mi?
-            if kacinilacaklar.contains(tip) { return false }
-            // Bu tip son `maksArdArdaTekrar` sayısında üst üste gelmiş mi?
-            let sonN = recentShapes.suffix(maksArdArdaTekrar)
+    private func agirlikliSec(from havuz: [BlockShapeType],
+                              kacinilacaklar: [BlockShapeType],
+                              fitMap: [BlockShapeType: Int],
+                              crowding: Double) -> BlockShapeType {
+        let sonN = recentShapes.suffix(maksArdArdaTekrar)
+
+        var adaylar = havuz.filter { !kacinilacaklar.contains($0) }
+        if adaylar.isEmpty { adaylar = havuz }
+        if adaylar.isEmpty { adaylar = productionPool }
+
+        // Fit count olanlar varken 0-fit olanları ele — gereksiz tıkanmayı azalt
+        let fitliAdaylar = adaylar.filter { (fitMap[$0] ?? 0) > 0 }
+        if !fitliAdaylar.isEmpty { adaylar = fitliAdaylar }
+
+        var weights: [Int] = []
+        weights.reserveCapacity(adaylar.count)
+
+        for tip in adaylar {
+            // Üst üste tekrar kuralı: son N aynıysa tamamen engelle
             if sonN.count == maksArdArdaTekrar && sonN.allSatisfy({ $0 == tip }) {
-                // Üst üste limit aşıldı — bu tipi engelle
-                return false
+                weights.append(0)
+                continue
             }
-            return true
+
+            let fitCount = max(1, fitMap[tip] ?? 1)
+            let tekrarSayisi = recentShapes.filter { $0 == tip }.count
+            let tekrarCarpani = pow(tekrarAzaltmaKatsayisi, Double(tekrarSayisi))
+            let kategori = categoryMap[tip] ?? .micro
+            let kategoriTekrarSayisi = recentShapes.map { categoryMap[$0] ?? .micro }.filter { $0 == kategori }.count
+            let kategoriCarpani = pow(kategoriAzaltmaKatsayisi, Double(kategoriTekrarSayisi))
+
+            let baseWeight = agirlikTabani(for: tip)
+            var weightDouble = Double(baseWeight) * Double(fitCount) * tekrarCarpani * kategoriCarpani
+
+            // Grid çok doluysa küçük/yardımcı parçalara hafif bias
+            if crowding >= crowdingHelperThreshold, helperPool.contains(tip) {
+                weightDouble *= crowdingHelperBoost
+            }
+
+            let weight = max(1, Int(weightDouble.rounded(.toNearestOrAwayFromZero)))
+            weights.append(weight)
         }
 
-        // Filtreleme sonucu havuz boşaldıysa (çok kısıtlayıcı durum) kısıtı kaldır
-        if filtrelenmisHavuz.isEmpty {
-            filtrelenmisHavuz = havuz.filter { !kacinilacaklar.contains($0) }
+        // Eğer tüm ağırlıklar 0 olduysa düz random fallback
+        if weights.allSatisfy({ $0 == 0 }) {
+            return adaylar.randomElement() ?? (BlockShapeType.allCases.randomElement() ?? .single)
         }
 
-        // Hâlâ boşsa tüm havuzu kullan — oyun hiç takılmaz
-        if filtrelenmisHavuz.isEmpty {
-            filtrelenmisHavuz = havuz.isEmpty ? Array(BlockShapeType.allCases) : havuz
-        }
+        return agirlikliRastgeleSec(adaylar, weights: weights)
+    }
 
-        // Güvenli seçim: havuz boşsa tüm şekillerden rastgele seç — crash önlenir
-        guard let secilen = filtrelenmisHavuz.randomElement() else {
-            return BlockShapeType.allCases.randomElement() ?? .single
+    /// Ağırlıklı rastgele seçim — performans: küçük havuz, basit O(n)
+    private func agirlikliRastgeleSec(_ adaylar: [BlockShapeType], weights: [Int]) -> BlockShapeType {
+        let toplam = weights.reduce(0, +)
+        guard toplam > 0 else { return adaylar.randomElement() ?? .single }
+        var hedef = Int.random(in: 0..<toplam)
+        for (i, w) in weights.enumerated() {
+            hedef -= w
+            if hedef < 0 { return adaylar[i] }
         }
-        return secilen
+        return adaylar.last ?? .single
+    }
+
+    /// Tipin base ağırlığını üretir — frequency kontrolü
+    private func agirlikTabani(for tip: BlockShapeType) -> Int {
+        if commonPool.contains(tip) { return 10 }
+        if uncommonPool.contains(tip) { return 6 }
+        if rarePool.contains(tip) { return 3 }
+        return 5
     }
 
     // MARK: - Geçmiş Yönetimi
@@ -227,6 +316,22 @@ final class ShapeDispenser {
     }
 
     // MARK: - Grid Analizi
+
+    /// Grid doluluk oranını 0...1 aralığında verir — helper bias için
+    private func gridCrowdingFactor(_ grid: [[UIColor?]]) -> Double {
+        let satirSayisi = grid.count
+        guard satirSayisi > 0 else { return 0 }
+        let sutunSayisi = grid[0].count
+        guard sutunSayisi > 0 else { return 0 }
+        let toplam = satirSayisi * sutunSayisi
+        var dolu = 0
+        for satir in 0..<satirSayisi {
+            for sutun in 0..<sutunSayisi {
+                if grid[satir][sutun] != nil { dolu += 1 }
+            }
+        }
+        return Double(dolu) / Double(toplam)
+    }
 
     /// Grid'in doluluk durumunu analiz eder ve üretim ipucu çıkarır.
     ///
@@ -311,6 +416,49 @@ final class ShapeDispenser {
             }
         }
         return false  // Hiçbir pozisyon uygun değil
+    }
+
+    // MARK: - Fit Sayımı (Akıllı Üretim)
+
+    /// Grid üzerinde her tip için kaç farklı yerleşim noktası olduğunu sayar.
+    /// Değer büyüdükçe parça daha "esnek" kabul edilir.
+    private func fitCountMap(_ grid: [[UIColor?]]) -> [BlockShapeType: Int] {
+        var map: [BlockShapeType: Int] = [:]
+        for shape in BlockShape.all {
+            map[shape.type] = fitCount(shape, grid: grid)
+        }
+        return map
+    }
+
+    /// Verilen şeklin grid'e kaç farklı pozisyona sığabildiğini sayar.
+    /// 8x8 küçük alan için brute force güvenli ve hızlı.
+    private func fitCount(_ parca: BlockShape, grid: [[UIColor?]]) -> Int {
+        let satirSayisi = grid.count
+        guard satirSayisi > 0 else { return 0 }
+        let sutunSayisi = grid[0].count
+        guard sutunSayisi > 0 else { return 0 }
+
+        let minSatir = parca.offsets.map(\.row).min() ?? 0
+        let minSutun = parca.offsets.map(\.col).min() ?? 0
+
+        var count = 0
+        for satir in 0..<satirSayisi {
+            for sutun in 0..<sutunSayisi {
+                var sigiyorMu = true
+                for offset in parca.offsets {
+                    let r = satir + offset.row - minSatir
+                    let c = sutun + offset.col - minSutun
+                    if r < 0 || r >= satirSayisi || c < 0 || c >= sutunSayisi {
+                        sigiyorMu = false; break
+                    }
+                    if grid[r][c] != nil {
+                        sigiyorMu = false; break
+                    }
+                }
+                if sigiyorMu { count += 1 }
+            }
+        }
+        return count
     }
 }
 

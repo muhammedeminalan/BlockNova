@@ -37,6 +37,8 @@ extension GameScene {
         layoutTopPanel()
         // Alt panel
         layoutBottomPanel()
+        // Preview slotları
+        layoutPreviewSlots()
         // Tepsi parçaları
         layoutTrayPieces()
     }
@@ -94,18 +96,28 @@ extension GameScene {
 
     /// Alt tepsi parçalarını safe area bottom'a göre konumlandırır
     func layoutTrayPieces() {
+        for (i, slot) in previewSlots.enumerated() {
+            guard let piece = slot.piece else { continue }
+            if piece === draggedPiece { continue }
+            piece.position     = slot.position
+            piece.homePosition = slot.position
+            piece.applyPreviewScale(slotSize: slot.size)
+            trayPieces[i] = piece
+        }
+    }
+
+    // MARK: - Preview Slot Layout
+
+    /// Preview slotlarını safe area bottom'a göre konumlandırır
+    func layoutPreviewSlots() {
         let slotWidth = C.screenW / 3
         let midY      = safeAreaFrame.minY + C.bottomPanelHeight * 0.50
 
-        for (i, piece) in trayPieces.enumerated() {
-            guard let piece else { continue }
-            // Sürüklenen parçayı elle hizalama — dokunuş akıcılığı bozulmasın
-            if piece === draggedPiece { continue }
-
+        for i in 0..<previewSlots.count {
+            let slot = previewSlots[i]
             let targetX = slotWidth * CGFloat(i) + slotWidth / 2
-            let target  = CGPoint(x: targetX, y: midY)
-            piece.position     = target
-            piece.homePosition = target
+            slot.position = CGPoint(x: targetX, y: midY)
+            slot.updateSize(C.previewSlotSize)
         }
     }
 

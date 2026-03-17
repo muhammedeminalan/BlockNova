@@ -60,21 +60,24 @@ final class GameManager {
         addPoints(points)
     }
 
-    /// Hücre yerleştirme skoru: her hücre 1 puan
-    /// Yeterince basit, spam yerleştirmeyi ödüllendirmez
+    /// Hücre yerleştirme skoru: her hücre daha tatmin edici puan verir
+    /// Oyun ekonomisini şişirmeden ödül hissini artırır
     func addScore(forCells count: Int) {
-        addPoints(count)
+        addPoints(count * C.scoreCellBase)
     }
 
-    /// Çizgi temizleme skoru — combo bonusu ile artar:
-    /// 1 çizgi: 10, 2 çizgi: 10+25=35, 3+ çizgi: n*10+50
+    /// Çizgi temizleme skoru — multi-clear ödülü daha belirgin
+    /// 1 çizgi: base, 2 çizgi: base + bonus, 3+ çizgi: base + artan bonus
     func addScore(forLines count: Int) {
-        let base  = count * 10
+        let base = count * C.scoreLineBase
         let bonus: Int
         switch count {
-        case 1:  bonus = 0
-        case 2:  bonus = 25
-        default: bonus = 50   // 3 veya daha fazla — combo ödülü
+        case 1:
+            bonus = 0
+        case 2:
+            bonus = C.scoreLineBonus2
+        default:
+            bonus = C.scoreLineBonus3Plus + (count - 3) * C.scoreLineBonusPerExtra
         }
         addPoints(base + bonus)
     }
@@ -117,12 +120,17 @@ final class GameManager {
         player.authenticateHandler = { vc, error in
             if let vc = vc {
                 // Apple'ın standart Game Center giriş ekranını göster
-                viewController.present(vc, animated: true)
+                DispatchQueue.main.async {
+                    viewController.present(vc, animated: true)
+                }
             } else if player.isAuthenticated {
                 // Giriş başarılı — kullanıcı adını logla
                 print("Game Center giriş başarılı: \(player.displayName)")
             }
             // Giriş reddedilirse ya da hata oluşursa sessizce devam et — crash olmaz
+            if let error = error {
+                print("Game Center auth hatası: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -136,7 +144,7 @@ final class GameManager {
             score,
             context: 0,
             player: GKLocalPlayer.local,
-            leaderboardIDs: ["com.novablock.highscore"]
+            leaderboardIDs: [C.leaderboardID]
         ) { error in
             if let error = error {
                 // Hata sessizce loglanır — kullanıcı deneyimini bozmaz
@@ -149,16 +157,21 @@ final class GameManager {
     /// viewController: GKGameCenterViewController üzerinde gösterilecek controller
     static func showLeaderboard(from viewController: UIViewController) {
         // Kullanıcı giriş yapmamışsa gösterme — boş ekran açılmaz
-        guard GKLocalPlayer.local.isAuthenticated else { return }
+        guard GKLocalPlayer.local.isAuthenticated else {
+            authenticateGameCenter(from: viewController)
+            return
+        }
 
         let vc = GKGameCenterViewController(
-            leaderboardID: "com.novablock.highscore",
+            leaderboardID: C.leaderboardID,
             playerScope: .global,   // Tüm oyuncular — sadece arkadaşlar değil
             timeScope: .allTime     // Tüm zamanlar — haftalık değil
         )
         // Delegate olarak geçirilen controller, ekran kapatmayı yönetir
         vc.gameCenterDelegate = viewController as? GKGameCenterControllerDelegate
-        viewController.present(vc, animated: true)
+        DispatchQueue.main.async {
+            viewController.present(vc, animated: true)
+        }
     }
 
     // MARK: - Özel Yardımcı
