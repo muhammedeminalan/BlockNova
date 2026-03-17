@@ -4,6 +4,7 @@
 // iCloud erisilemezse UserDefaults'a fallback yapar
 
 import Foundation
+import GameKit
 
 final class CloudManager {
     static let shared = CloudManager()
@@ -70,6 +71,56 @@ final class CloudManager {
                 object: nil,
                 userInfo: ["score": newScore]
             )
+        }
+    }
+
+    // Game Center ve iCloud'u senkronize eder
+    // Uygulama acilinca cagrilir
+    // Game Center varsa oradan, yoksa iCloud'tan alir
+    func syncHighScore(completion: ((Int) -> Void)? = nil) {
+
+        // Game Center'a giris yapilmis mi kontrol et
+        guard GKLocalPlayer.local.isAuthenticated else {
+            // Game Center yok — sadece iCloud'tan al
+            let score = loadHighScore()
+            completion?(score)
+            return
+        }
+
+        // Game Center'dan en yuksek skoru cek
+        GKLeaderboard.loadLeaderboards(IDs: [C.leaderboardID]) { [weak self] leaderboards, error in
+            guard let self = self else { return }
+
+            guard let leaderboard = leaderboards?.first, error == nil else {
+                // Game Center'a ulasilamadi — iCloud'tan al
+                let score = self.loadHighScore()
+                DispatchQueue.main.async { completion?(score) }
+                return
+            }
+
+            // Oyuncunun kendi skorunu cek
+            leaderboard.loadEntries(
+                for: .global,
+                timeScope: .allTime,
+                range: NSRange(location: 1, length: 1)
+            ) { localEntry, _, _, _ in
+                DispatchQueue.main.async {
+                    let iCloudScore = self.loadHighScore()
+
+                    // Game Center'dan skor geldiyse karsilastir
+                    if let gcScore = localEntry?.score {
+                        let best = max(Int(gcScore), iCloudScore)
+                        // En yuksek olani kaydet
+                        if best > iCloudScore {
+                            self.saveHighScore(best)
+                        }
+                        completion?(best)
+                    } else {
+                        // Game Center'da skor yok — iCloud'taki yeterli
+                        completion?(iCloudScore)
+                    }
+                }
+            }
         }
     }
 }

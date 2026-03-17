@@ -30,6 +30,9 @@ final class GameManager {
 
     // MARK: - Özellikler
 
+    /// Paylasilan instance — senkronizasyon icin kullanilir
+    static let shared = GameManager()
+
     /// Oyunun şu anki durumu — başlangıçta .playing
     private(set) var state: GameState = .playing
 
@@ -192,5 +195,21 @@ final class GameManager {
             }
         }
         delegate?.didUpdateScore(score, highScore: highScore, isNewRecord: isNewRecord)
+    }
+
+    // MARK: - Disaridan Rekor Guncelleme
+
+    /// Disaridan gelen skor mevcut highScore'dan buyukse guncelle
+    /// iCloud / Game Center senkronizasyonunda kullanilir
+    func updateHighScoreIfNeeded(_ score: Int) {
+        guard score > highScore else { return }
+        highScore = score
+        CloudManager.shared.saveHighScore(score)
+        // UI'i guncelle — NotificationCenter ile bildir
+        NotificationCenter.default.post(
+            name: Notification.Name("highScoreUpdated"),
+            object: nil,
+            userInfo: ["score": score]
+        )
     }
 }

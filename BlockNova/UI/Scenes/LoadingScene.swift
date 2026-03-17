@@ -175,9 +175,15 @@ final class LoadingScene: SKScene {
     // MARK: - Preload
 
     private func startPreloading() {
-        // Game Center authentication — LoadingScene içinde yapılır,
-        // GameViewController'daki çağrı kaldırılmadı: ikisi güvenle bir arada çalışır
-        authenticateGameCenter()
+        // Game Center authentication — LoadingScene içinde yapılır
+        // Auth tamamlanınca iCloud + Game Center senkronu yap
+        authenticateGameCenter {
+            CloudManager.shared.syncHighScore { bestScore in
+                // En yuksek skor guncellendi
+                // GameManager varsa onu da guncelle
+                GameManager.shared.updateHighScoreIfNeeded(bestScore)
+            }
+        }
 
         // Sesleri belleğe al — SoundManager zaten init'te yapıyor,
         // ek olarak SKAction oluşturarak iOS ses önbelleğini ısıtır
@@ -195,13 +201,14 @@ final class LoadingScene: SKScene {
 
     // MARK: - Game Center Auth
 
-    private func authenticateGameCenter() {
+    private func authenticateGameCenter(completion: @escaping () -> Void) {
         GKLocalPlayer.local.authenticateHandler = { [weak self] vc, _ in
             if let vc = vc {
                 // Apple'ın kendi giriş ekranını göster — LoadingScene üzerinde açılır
                 self?.view?.window?.rootViewController?.present(vc, animated: true)
             }
             // Başarılı, reddedilmiş ya da hata — LoadingScene devam eder, crash yok
+            completion()
         }
     }
 
