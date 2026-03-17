@@ -427,9 +427,13 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         HapticManager.impact(.medium)
         // Blok grid'e yerleştirilince pop sesi çal
         SoundManager.shared.playPlace(on: self)
+
+        // Tepsi slotunu ÖNCE nil yap — gridNode.place() satır temizleme olmadığında
+        // gridDidFinishPlacement'ı senkron çağırır. Slot nil yapılmamışsa tepsi
+        // "hâlâ dolu" görünür ve dealNewPieces hiç tetiklenmez.
+        trayPieces[piece.slotIndex] = nil
         gridNode.place(piece.shape, at: row, col: col)
 
-        trayPieces[piece.slotIndex] = nil
         piece.playPlaceAnimation { piece.removeFromParent() }
 
         // Game over kontrolu gridDidFinishPlacement delegate'inde yapilir.
