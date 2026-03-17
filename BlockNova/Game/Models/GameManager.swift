@@ -49,7 +49,7 @@ final class GameManager {
     // MARK: - Init
     init() {
         // Kayıtlı rekor varsa yükle — uygulama yeniden açılınca kaybolmasın
-        highScore = UserDefaults.standard.integer(forKey: C.highScoreKey)
+        highScore = CloudManager.shared.loadHighScore()
     }
 
     // MARK: - Skor Ekleme
@@ -101,10 +101,10 @@ final class GameManager {
     /// private score/highScore değerlerini dışarıdan set etmenin tek yolu.
     func restoreScore(_ savedScore: Int, highScore savedHighScore: Int) {
         score = savedScore
-        // highScore küçülmez — UserDefaults'taki değer baz alınır
+        // highScore küçülmez — iCloud + local degerlerden buyuk olan korunur
         if savedHighScore > highScore {
             highScore = savedHighScore
-            UserDefaults.standard.set(highScore, forKey: C.highScoreKey)
+            CloudManager.shared.saveHighScore(highScore)
         }
         // Delegate'e bildir: skor etiketleri hemen güncellenir
         delegate?.didUpdateScore(score, highScore: highScore, isNewRecord: false)
@@ -184,7 +184,7 @@ final class GameManager {
         if score > highScore {
             highScore = score
             // Kalıcı kayıt: uygulama kapansa da korunur
-            UserDefaults.standard.set(highScore, forKey: C.highScoreKey)
+            CloudManager.shared.saveHighScore(highScore)
             // isNewRecord sadece bu oturumda rekor ilk kez kırılınca true — sonraki artışlarda false
             if !newRecordAchieved {
                 isNewRecord = true

@@ -257,7 +257,7 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
         scoreTitleLabel = baslik
 
         // Skor değeri — başlığın altında, ortalı, büyük beyaz rakam
-        let hs = UserDefaults.standard.integer(forKey: C.highScoreKey)
+        let hs = CloudManager.shared.loadHighScore()
         let deger = SKLabelNode(fontNamed: "AvenirNext-Bold")
         deger.text                    = "\(hs)"
         deger.fontSize                = C.screenH * 0.042

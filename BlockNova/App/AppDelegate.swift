@@ -31,6 +31,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             print("AVAudioSession ayarlanamadı: \(error)")
         }
 
+        // CloudManager singleton'i baslat — iCloud senkronizasyonunu baslatir
+        let _ = CloudManager.shared
+
         // Baslangicta ekstra is yapmiyoruz — performans icin temiz baslangic
         return true
     }
