@@ -43,6 +43,11 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
     /// LİDERLİK buton etiketi
     private var leaderButtonLabel: SKLabelNode?
 
+    /// AYARLAR butonu sprite node'u
+    private var settingsButtonNode: SKSpriteNode?
+    /// AYARLAR buton etiketi
+    private var settingsButtonLabel: SKLabelNode?
+
     /// Versiyon etiketi
     private var versionLabel: SKLabelNode?
 
@@ -82,6 +87,7 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
         kurgulaSkorkart()
         kurgulaOynaButonu()
         kurgulaLiderlikButonu()
+        kurgulaAyarlarButonu()
         kurgulaVersiyon()
         girisAnimasyonu()
     }
@@ -338,6 +344,31 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
         leaderButtonLabel = lbl
     }
 
+    // MARK: - AYARLAR Butonu
+
+    /// Küçük, minimal ayarlar butonu — liderlik butonunun altında
+    private func kurgulaAyarlarButonu() {
+        let btnW = C.screenW * 0.32
+        let btnH = C.screenH * 0.045
+
+        let btn = SKSpriteNode(color: .clear, size: CGSize(width: btnW, height: btnH))
+        btn.zPosition = C.zUI
+        btn.name = "ayarlarBtn"
+        btn.alpha = 0  // Giriş animasyonu
+        addChild(btn)
+        settingsButtonNode = btn
+
+        let lbl = SKLabelNode(fontNamed: "AvenirNext-Medium")
+        lbl.text = "Ayarlar"
+        lbl.fontSize = C.screenH * 0.018
+        lbl.fontColor = UIColor(white: 1, alpha: 0.4)
+        lbl.verticalAlignmentMode = .center
+        lbl.zPosition = 1
+        lbl.name = "ayarlarBtn"
+        btn.addChild(lbl)
+        settingsButtonLabel = lbl
+    }
+
     // MARK: - Versiyon Etiketi
 
     /// Ekranın en altında, neredeyse görünmez — sadece çok yakın bakılınca fark edilir
@@ -406,6 +437,12 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
             btn.position = CGPoint(x: C.screenW / 2, y: safeMinY + safeH * 0.33)
         }
 
+        // --- AYARLAR BUTONU ---
+        // Liderlik butonunun altında — daha küçük ve minimal
+        if let btn = settingsButtonNode {
+            btn.position = CGPoint(x: C.screenW / 2, y: safeMinY + safeH * 0.23)
+        }
+
         // --- VERSİYON ---
         // Güvenli alanın en altında — home indicator çakışmaz
         if let lbl = versionLabel {
@@ -459,6 +496,12 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
             SKAction.fadeIn(withDuration: 0.3)
         ]))
 
+        // AYARLAR butonu: liderlikten sonra kısa gecikmeyle
+        settingsButtonNode?.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.62),
+            SKAction.fadeIn(withDuration: 0.25)
+        ]))
+
         // Versiyon: en son, sessizce
         versionLabel?.run(SKAction.sequence([
             SKAction.wait(forDuration: 0.7),
@@ -506,6 +549,15 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
 
             guard let vc = self.view?.window?.rootViewController else { return }
             GameManager.showLeaderboard(from: vc)
+        }
+
+        // AYARLAR butonuna basıldı
+        if node.name == "ayarlarBtn" || node.parent?.name == "ayarlarBtn" {
+            HapticManager.impact(.light)
+
+            let settings = SettingsScene(size: size)
+            settings.scaleMode = scaleMode
+            view?.presentScene(settings, transition: SKTransition.push(with: .left, duration: 0.3))
         }
     }
 

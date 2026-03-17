@@ -35,42 +35,48 @@ final class SoundManager {
 
     // Blok yerleştirince çal
     func playPlace(on node: SKNode) {
-        guard isSoundEnabled else { return }
+        // SettingsManager'dan kontrol et — kullanıcı sesi kapattıysa çalma
+        guard SettingsManager.shared.isSoundEnabled else { return }
         guard shouldPlay(key: "place") else { return }
         node.run(placeSound)
     }
 
     // Çizgi patlaması
     func playClear(on node: SKNode) {
-        guard isSoundEnabled else { return }
+        // SettingsManager'dan kontrol et — kullanıcı sesi kapattıysa çalma
+        guard SettingsManager.shared.isSoundEnabled else { return }
         guard shouldPlay(key: "clear") else { return }
         node.run(clearSound)
     }
 
     // Combo (2+ çizgi) — belirgin ama spam yapmayan
     func playCombo(on node: SKNode) {
-        guard isSoundEnabled else { return }
+        // SettingsManager'dan kontrol et — kullanıcı sesi kapattıysa çalma
+        guard SettingsManager.shared.isSoundEnabled else { return }
         guard shouldPlay(key: "combo") else { return }
         node.run(comboSound)
     }
 
     // Geçersiz hamle — kısa uyarı
     func playInvalid(on node: SKNode) {
-        guard isSoundEnabled else { return }
+        // SettingsManager'dan kontrol et — kullanıcı sesi kapattıysa çalma
+        guard SettingsManager.shared.isSoundEnabled else { return }
         guard shouldPlay(key: "invalid") else { return }
         node.run(invalidSound)
     }
 
     // Yeni rekor
     func playRecord(on node: SKNode) {
-        guard isSoundEnabled else { return }
+        // SettingsManager'dan kontrol et — kullanıcı sesi kapattıysa çalma
+        guard SettingsManager.shared.isSoundEnabled else { return }
         guard shouldPlay(key: "record") else { return }
         node.run(recordSound)
     }
 
     // Oyun bitti
     func playGameOver(on node: SKNode) {
-        guard isSoundEnabled else { return }
+        // SettingsManager'dan kontrol et — kullanıcı sesi kapattıysa çalma
+        guard SettingsManager.shared.isSoundEnabled else { return }
         guard shouldPlay(key: "gameover") else { return }
         node.run(gameOverSound)
     }

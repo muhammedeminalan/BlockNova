@@ -33,6 +33,8 @@ final class HapticManager {
     /// Fiziksel dokunma hissi — yerlestirme, etkilesim icin
     /// style: .light (hafif), .medium (orta), .heavy (guclu)
     static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle) {
+        // SettingsManager'dan kontrol et — kullanıcı titreşimi kapattıysa çalıştırma
+        guard SettingsManager.shared.isHapticEnabled else { return }
         // Main thread garantisi: UIKit generator'lari sadece main thread'de calisir
         DispatchQueue.main.async {
             // Cache'lenmiş generator'dan çal — yeni instance oluşturulmaz
@@ -58,6 +60,8 @@ final class HapticManager {
 
     /// Bildirim tipi haptic — basari, uyari, hata durumlari icin
     static func notification(_ type: UINotificationFeedbackGenerator.FeedbackType) {
+        // SettingsManager'dan kontrol et — kullanıcı titreşimi kapattıysa çalıştırma
+        guard SettingsManager.shared.isHapticEnabled else { return }
         // Main thread disinda kullanmak dokunus motorunu bozabilir
         DispatchQueue.main.async {
             // Cache'lenmiş generator'dan çal — yeni instance oluşturulmaz

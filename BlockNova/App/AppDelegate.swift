@@ -3,6 +3,7 @@
 // Bu proje SpriteKit kullandigi icin burada minimum kod tutulur.
 
 import UIKit
+import AVFoundation
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -15,6 +16,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Ses kategorisini ambient olarak ayarla
+        // .ambient → diğer uygulamaların sesini kesmez
+        // Spotify çalarken oyun sesleri üstüne eklenir, çakışma olmaz
+        do {
+            try AVAudioSession.sharedInstance().setCategory(
+                .ambient,
+                mode: .default,
+                options: [.mixWithOthers]  // Diğer seslerle karışmasına izin ver
+            )
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            // Hata olursa sessizce devam et — crash verme
+            print("AVAudioSession ayarlanamadı: \(error)")
+        }
+
         // Baslangicta ekstra is yapmiyoruz — performans icin temiz baslangic
         return true
     }
