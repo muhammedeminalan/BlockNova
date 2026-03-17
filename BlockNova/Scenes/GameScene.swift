@@ -432,17 +432,9 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         trayPieces[piece.slotIndex] = nil
         piece.playPlaceAnimation { piece.removeFromParent() }
 
-        if trayPieces.allSatisfy({ $0 == nil }) {
-            // Kısa gecikme: son parçanın animasyonu tamamlansın
-            run(SKAction.wait(forDuration: 0.25)) { [weak self] in
-                self?.dealNewPieces()
-                self?.run(SKAction.wait(forDuration: 0.3)) {
-                    self?.checkGameOver()
-                }
-            }
-        } else {
-            checkGameOver()
-        }
+        // Game over kontrolu gridDidFinishPlacement delegate'inde yapilir.
+        // Satir/sutun temizleme 0.18sn gecikmeyle gerceklesir — o bitene kadar
+        // grid verisi guncel degildir, bu yuzden burada checkGameOver CAGIRILMAZ.
     }
 
     // MARK: - Oyun Bitti Kontrolü
@@ -513,6 +505,21 @@ extension GameScene: GridDelegate {
 
     func gridDidPlaceCells(_ count: Int) {
         manager.addScore(forCells: count)
+    }
+
+    func gridDidFinishPlacement() {
+        // Satir/sutun temizleme bittikten sonra: tepsi bosaldiysa yeni parcalar dagit,
+        // sonra game over kontrolu yap. Grid verisi artik gunceldir.
+        if trayPieces.allSatisfy({ $0 == nil }) {
+            run(SKAction.wait(forDuration: 0.25)) { [weak self] in
+                self?.dealNewPieces()
+                self?.run(SKAction.wait(forDuration: 0.3)) {
+                    self?.checkGameOver()
+                }
+            }
+        } else {
+            checkGameOver()
+        }
     }
 
     /// Çizgi temizleme uçan yazı efekti
