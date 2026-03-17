@@ -14,6 +14,8 @@ protocol GridDelegate: AnyObject {
     func gridDidClearLines(_ count: Int)
     /// Hucreler yerlestirildiginde: kac hucre
     func gridDidPlaceCells(_ count: Int)
+    /// Yerlestirme islemi tamamen bitti (cizgi temizleme dahil) — game over kontrolu icin
+    func gridDidFinishPlacement()
 }
 
 // MARK: - GridNode
@@ -292,7 +294,10 @@ final class GridNode: SKNode {
         }
 
         // Hic cizgi yoksa erken cik — gereksiz animasyon yok
-        guard !rowsToClear.isEmpty || !colsToClear.isEmpty else { return }
+        guard !rowsToClear.isEmpty || !colsToClear.isEmpty else {
+            delegate?.gridDidFinishPlacement()
+            return
+        }
 
         // Temizlenecek benzersiz hucre node'lari ve duny koordinatlari
         // Koordinat seti: ayni hucreyi iki kez islememek icin (satir-sutun kesisimi)
@@ -336,6 +341,7 @@ final class GridNode: SKNode {
             for row in rowsToClear { for col in 0..<C.cols { self.clearCell(row: row, col: col) } }
             for col in colsToClear { for row in 0..<C.rows { self.clearCell(row: row, col: col) } }
             self.delegate?.gridDidClearLines(lineCount)
+            self.delegate?.gridDidFinishPlacement()
         }
     }
 
