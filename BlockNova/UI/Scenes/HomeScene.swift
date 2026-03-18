@@ -54,6 +54,8 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
     /// Sahne bir kez kurulsun — safe area değişince sadece layout güncellenir
     private var isSetup = false
 
+    // Ayarlar ekranini yeni scene olarak ac — HomeScene yeniden olusmaz
+
     // MARK: - Sahne Girişi
 
     override func didMove(to view: SKView) {
@@ -357,10 +359,20 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
         addChild(btn)
         settingsButtonNode = btn
 
+        // Daha belirgin görünüm için hafif arka plan ve border
+        let rect = CGRect(x: -btnW / 2, y: -btnH / 2, width: btnW, height: btnH)
+        let outline = SKShapeNode(rect: rect, cornerRadius: btnH / 2)
+        outline.fillColor = UIColor.white.withAlphaComponent(0.06).sk
+        outline.strokeColor = UIColor.white.withAlphaComponent(0.18).sk
+        outline.lineWidth = 1
+        outline.zPosition = 0.5
+        outline.name = "ayarlarBtn"
+        btn.addChild(outline)
+
         let lbl = SKLabelNode(fontNamed: "AvenirNext-Medium")
         lbl.text = "Ayarlar"
-        lbl.fontSize = C.screenH * 0.018
-        lbl.fontColor = UIColor(white: 1, alpha: 0.4)
+        lbl.fontSize = C.screenH * 0.019
+        lbl.fontColor = UIColor(white: 1, alpha: 0.75)
         lbl.verticalAlignmentMode = .center
         lbl.zPosition = 1
         lbl.name = "ayarlarBtn"
@@ -557,12 +569,12 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
             GameManager.showLeaderboard(from: vc)
         }
 
-        // AYARLAR butonuna basıldı
+        // AYARLAR butonuna basıldı — HomeScene yeniden olusmaz, geri donuste ayni instance kullanilir
         if node.name == "ayarlarBtn" || node.parent?.name == "ayarlarBtn" {
             HapticManager.impact(.light)
-
             let settings = SettingsScene(size: size)
             settings.scaleMode = scaleMode
+            settings.homeScene = self
             view?.presentScene(settings, transition: SKTransition.push(with: .left, duration: 0.3))
         }
     }

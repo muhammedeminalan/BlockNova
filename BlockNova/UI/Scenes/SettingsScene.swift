@@ -12,6 +12,8 @@ final class SettingsScene: SKScene, SafeAreaUpdatable {
 
     /// Güncel safe area inset'leri — layout hesaplarında kullanılır
     private var safeAreaInsets: UIEdgeInsets = .zero
+    /// HomeScene referansı — geri dönüşte aynı sahne kullanılır
+    var homeScene: HomeScene?
 
     // MARK: - Node Referansları
 
@@ -228,13 +230,18 @@ final class SettingsScene: SKScene, SafeAreaUpdatable {
         let node = atPoint(location)
 
         if node.name == "backBtn" || node.parent?.name == "backBtn" {
-            let home = HomeScene(size: size)
+            // Buton geri bildirimi — hafif titresim
+            HapticManager.impact(.light)
+            // HomeScene yeniden olusmasin — mevcut instance'a don
+            guard let home = homeScene else { return }
             home.scaleMode = scaleMode
             view?.presentScene(home, transition: SKTransition.push(with: .right, duration: 0.3))
             return
         }
 
         if node.name == "soundToggle" || node.parent?.name == "soundToggle" {
+            // Buton geri bildirimi — hafif titresim
+            HapticManager.impact(.light)
             let yeniDeger = !SettingsManager.shared.isSoundEnabled
             SettingsManager.shared.isSoundEnabled = yeniDeger
             soundToggleNode?.setOn(yeniDeger, animated: true)
@@ -242,6 +249,8 @@ final class SettingsScene: SKScene, SafeAreaUpdatable {
         }
 
         if node.name == "hapticToggle" || node.parent?.name == "hapticToggle" {
+            // Buton geri bildirimi — hafif titresim
+            HapticManager.impact(.light)
             let yeniDeger = !SettingsManager.shared.isHapticEnabled
             SettingsManager.shared.isHapticEnabled = yeniDeger
             hapticToggleNode?.setOn(yeniDeger, animated: true)
