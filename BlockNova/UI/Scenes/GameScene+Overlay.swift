@@ -1,481 +1,406 @@
-// 📁 Scenes/GameScene+Overlay.swift
-// Oyun sonu overlay — premium yeniden tasarım.
-//
-// TASARIM KARARLARI:
-// - Tam ekran koyu dim katmanı: grid tamamen kapanır, odak karta geçer
-// - Kompakt kart: ekranı kaplamasın, içerik sıkışık değil ama dolu
-// - Skor dairesel gösterim: dramatik ve hatırda kalıcı
-// - Skor sayaç animasyonu: 0'dan gerçek değere çıkar, heyecan katar
-// - Kart aşağıdan yukarı giriş animasyonu: yumuşak, modern his
-// - Tüm boyutlar responsive: sabit px kullanılmaz
-
 import SpriteKit
 import UIKit
 
-// MARK: - Overlay Gösterimi
-
 extension GameScene {
 
-    func showGameOverOverlay() {
-        // Önceki overlay varsa temizle — üst üste binme önlenir
+    // MARK: - Public
+
+    func showGameOverOverlay(score: Int, highScore: Int, isNewRecord: Bool) {
         overlayNode?.removeFromParent()
         overlayNode = nil
 
-        let overlay = SKNode()
-        overlay.zPosition = C.zOverlay
+        let screenW = C.screenW
+        let screenH = C.screenH
+        let minSide = min(screenW, screenH)
 
-        // KATMAN 1 — Tam ekran koyu arka plan
-        // Grid ve oyun alanı tamamen karartılır — dikkat karta çekilir
-        let dim = SKSpriteNode(
-            color: UIColor.black.withAlphaComponent(0.78).sk,
-            size: CGSize(width: C.screenW, height: C.screenH)
+        // Overlay background
+        let overlay = SKSpriteNode(
+            color: UIColor(red: 0.02, green: 0.02, blue: 0.08, alpha: 0.92).sk,
+            size: CGSize(width: screenW, height: screenH)
         )
-        dim.anchorPoint = .zero
-        dim.position    = .zero
-        dim.zPosition   = 0
-        dim.alpha       = 0
-        overlay.addChild(dim)
-
-        // Dim katmanı fade in — ani değil, yavaş karartma
-        dim.run(SKAction.fadeIn(withDuration: 0.35))
-
-        // KATMAN 2 — Kart
-        // Genişlik: ekrana sığacak maksimum
-        let kartW = min(C.screenW * 0.84, C.screenW - 32)
-        // Yükseklik: içerik miktarına göre dinamik (yeniRekor badge'i varsa daha büyük)
-        let isYeniRekor = viewModel.oyunSonuYeniRekorMu
-        let kartH = isYeniRekor
-            ? min(C.screenH * 0.72, C.screenH - 80)   // YENİ REKOR durumu — daha geniş
-            : min(C.screenH * 0.64, C.screenH - 80)   // Normal durum
-
-        olusturKart(overlay: overlay, kartW: kartW, kartH: kartH)
-
+        overlay.position = CGPoint(x: screenW / 2, y: screenH / 2)
+        overlay.zPosition = 200
+        overlay.name = "gameOverOverlay"
+        overlay.alpha = 0
         addChild(overlay)
         overlayNode = overlay
-    }
 
-    // MARK: - Kart Oluşturma
+        overlay.run(SKAction.fadeIn(withDuration: 0.25))
 
-    private func olusturKart(overlay: SKNode, kartW: CGFloat, kartH: CGFloat) {
-        let ekranOrtaX = C.screenW / 2
-        // Safe area varsa ortası, yoksa ekranın ortası
-        let ekranOrtaY: CGFloat = safeAreaFrame == .zero
-            ? C.screenH / 2
-            : safeAreaFrame.midY
+        // MARK: Card sizing
+        let cardW = screenW * 0.86
+        let cardH = screenH * 0.72
+        let cornerRadius = cardH * 0.08
 
-        // Giriş animasyonu için başlangıç pozisyonu: ekranın altından gelir
-        let basNokta  = CGPoint(x: ekranOrtaX, y: ekranOrtaY - C.screenH * 0.08)
-        let hedefNokta = CGPoint(x: ekranOrtaX, y: ekranOrtaY)
+        let cardContainer = SKNode()
+        cardContainer.position = .zero
+        cardContainer.zPosition = 201
+        overlay.addChild(cardContainer)
 
-        // Hafif gölge — kartı zeminden kaldırır, derinlik katar
-        let golgeRect = CGRect(x: -kartW / 2, y: -kartH / 2, width: kartW, height: kartH)
-        let golge     = SKShapeNode(rect: golgeRect, cornerRadius: 28)
-        golge.fillColor   = UIColor.black.withAlphaComponent(0.35).sk
-        golge.strokeColor = .clear
-        golge.position    = CGPoint(x: basNokta.x, y: basNokta.y - 6)
-        golge.zPosition   = 1
-        golge.alpha       = 0
-        overlay.addChild(golge)
+        // Real rounded card background
+        let cardRect = CGRect(
+            x: -cardW / 2,
+            y: -cardH / 2,
+            width: cardW,
+            height: cardH
+        )
 
-        // Ana kart
-        let kartRect = CGRect(x: -kartW / 2, y: -kartH / 2, width: kartW, height: kartH)
-        let kart     = SKShapeNode(rect: kartRect, cornerRadius: 28)
-        kart.fillColor   = UIColor(hex: "#0f0f2e").sk
-        kart.strokeColor = UIColor.white.withAlphaComponent(0.08).sk
-        kart.lineWidth   = 1
-        kart.position    = basNokta
-        kart.zPosition   = 2
-        kart.alpha       = 0
-        overlay.addChild(kart)
+        let cardPath = UIBezierPath(
+            roundedRect: cardRect,
+            cornerRadius: cornerRadius
+        ).cgPath
 
-        // Kart ve gölge giriş animasyonu: aşağıdan yukarı + fade in
-        let girisAnimasyon = SKAction.group([
-            SKAction.fadeIn(withDuration: 0.35),
-            SKAction.move(to: hedefNokta, duration: 0.35)
-        ])
-        // Ease out hissi için timing function
-        girisAnimasyon.timingMode = .easeOut
-        kart.run(girisAnimasyon)
+        let cardBackground = SKShapeNode(path: cardPath)
+        cardBackground.fillColor = UIColor(red: 0.06, green: 0.07, blue: 0.18, alpha: 1).sk
+        cardBackground.strokeColor = .clear
+        cardBackground.alpha = 0
+        cardContainer.addChild(cardBackground)
 
-        let golgeHedef = CGPoint(x: hedefNokta.x, y: hedefNokta.y - 6)
-        let golgeGiris = SKAction.group([
-            SKAction.fadeIn(withDuration: 0.35),
-            SKAction.move(to: golgeHedef, duration: 0.35)
-        ])
-        golgeGiris.timingMode = .easeOut
-        golge.run(golgeGiris)
+        let cardBorder = SKShapeNode(path: cardPath)
+        cardBorder.fillColor = .clear
+        cardBorder.strokeColor = UIColor(red: 0.00, green: 0.80, blue: 1.00, alpha: 0.28).sk
+        cardBorder.lineWidth = max(1.0, screenW * 0.0025)
+        cardBorder.alpha = 0
+        cardContainer.addChild(cardBorder)
 
-        // Kart içeriğini kur — animasyondan kısa süre sonra içerik belirir
-        kart.run(SKAction.wait(forDuration: 0.1)) { [weak self] in
-            self?.kartIcerigiKur(kart: kart, kartW: kartW, kartH: kartH)
-        }
-    }
+        cardContainer.setScale(0.90)
+        cardContainer.alpha = 0
+        cardContainer.run(
+            SKAction.group([
+                SKAction.fadeIn(withDuration: 0.28),
+                SKAction.scale(to: 1.0, duration: 0.28)
+            ])
+        )
+        cardBorder.run(SKAction.fadeIn(withDuration: 0.28))
 
-    // MARK: - Kart İçeriği
+        // MARK: Layout values
+        let topY = cardH * 0.34
+        let titleLineY = cardH * 0.28
+        let scoreCardY = cardH * 0.09
+        let scoreCardW = cardW * 0.62
+        let scoreCardH = cardH * 0.22
+        let scoreSectionBottomY = -cardH * 0.08
+        let separatorY = -cardH * 0.15
+        let primaryButtonY = -cardH * 0.26
+        let secondaryButtonY = -cardH * 0.37
 
-    // Layout stratejisi: TOP-DOWN FLOW
-    // ─────────────────────────────────
-    // Cursor (imleç) kartın üst kenarından başlar, her eleman kadar aşağı kayar.
-    // Hiçbir eleman sabit px veya C.screenH kullanmaz — her şey kartH oranı.
-    // Bu sayede kart ne kadar büyük/küçük olursa olsun içerik asla taşmaz.
-    private func kartIcerigiKur(kart: SKShapeNode, kartW: CGFloat, kartH: CGFloat) {
-        let isYeniRekor = viewModel.oyunSonuYeniRekorMu
-        let guncelSkor  = manager.score
-        let guncelRekor = manager.highScore
+        // MARK: Title
+        let titleLabel = SKLabelNode(text: "OYUN BİTTİ")
+        titleLabel.fontName = "AvenirNext-Heavy"
+        titleLabel.fontSize = screenH * 0.026
+        titleLabel.fontColor = UIColor(red: 0.00, green: 0.83, blue: 1.00, alpha: 1.0)
+        titleLabel.horizontalAlignmentMode = .center
+        titleLabel.verticalAlignmentMode = .center
+        titleLabel.position = CGPoint(x: 0, y: topY)
+        titleLabel.alpha = 0
+        cardContainer.addChild(titleLabel)
 
-        // ── BOYUTLAR (kartH'a orantılı) ────────────────────────────────
-        let padV          = kartH * 0.06          // üst/alt iç boşluk
-        let baslikFontH   = kartH * 0.055         // "— OYUN BİTTİ —" font
-        let araKucuk      = kartH * 0.025         // küçük elemanlar arası boşluk
-        let araBuyuk      = kartH * 0.035         // büyük elemanlar arası boşluk
-        let daireYaricap  = min(kartH * 0.155, kartW * 0.28)
-        let puanFontH     = kartH * 0.038
-        let rekorFontH    = kartH * 0.052
-        let btn1H         = kartH * 0.135
-        let btn2H         = kartH * 0.105
-        let btnAra        = kartH * 0.028
+        let titleLine = SKSpriteNode(
+            color: UIColor(red: 0.00, green: 0.83, blue: 1.00, alpha: 0.22).sk,
+            size: CGSize(width: cardW * 0.70, height: max(1, screenH * 0.0016))
+        )
+        titleLine.position = CGPoint(x: 0, y: titleLineY)
+        titleLine.alpha = 0
+        cardContainer.addChild(titleLine)
 
-        // ── CURSOR — üstten aşağıya ────────────────────────────────────
-        // cursor = kartın merkezi (0,0)'a göre Y pozisyonu
-        // kartın üst kenarı = +kartH/2
-        var cursor = kartH / 2 - padV
+        // MARK: Score card
+        let scoreRect = CGRect(
+            x: -scoreCardW / 2,
+            y: -scoreCardH / 2,
+            width: scoreCardW,
+            height: scoreCardH
+        )
+        let scoreCardPath = UIBezierPath(
+            roundedRect: scoreRect,
+            cornerRadius: scoreCardH * 0.30
+        ).cgPath
 
-        // ── 1. BAŞLIK ──────────────────────────────────────────────────
-        cursor -= baslikFontH / 2   // label'ın merkezi
-        let baslik = SKLabelNode(fontNamed: "AvenirNext-Medium")
-        baslik.text      = "— OYUN BİTTİ —"
-        baslik.fontSize  = baslikFontH
-        baslik.fontColor = UIColor(hex: "#00D4FF").sk
-        baslik.horizontalAlignmentMode = .center
-        baslik.verticalAlignmentMode   = .center
-        baslik.position  = CGPoint(x: 0, y: cursor)
-        baslik.zPosition = 1
-        baslik.alpha     = 0
-        kart.addChild(baslik)
-        baslik.run(SKAction.sequence([
-            SKAction.wait(forDuration: 0.10),
-            SKAction.fadeIn(withDuration: 0.25)
-        ]))
-        cursor -= baslikFontH / 2   // alt kenarına in
-        cursor -= araBuyuk          // daire öncesi boşluk
+        let scoreGlow = SKShapeNode(path: scoreCardPath)
+        scoreGlow.fillColor = UIColor(red: 1.00, green: 0.84, blue: 0.00, alpha: 0.06).sk
+        scoreGlow.strokeColor = .clear
+        scoreGlow.position = CGPoint(x: 0, y: scoreCardY)
+        scoreGlow.alpha = 0
+        cardContainer.addChild(scoreGlow)
 
-        // ── 2. SKOR DAİRESİ ────────────────────────────────────────────
-        cursor -= daireYaricap      // daire merkezi
-        let daireY = cursor
-        let daire = SKShapeNode(circleOfRadius: daireYaricap)
-        daire.fillColor   = UIColor(hex: "#1a1a3e").sk
-        daire.strokeColor = UIColor(hex: "#FFD700").sk
-        daire.lineWidth   = 2.0
-        daire.position    = CGPoint(x: 0, y: daireY)
-        daire.zPosition   = 1
-        daire.alpha       = 0
-        kart.addChild(daire)
-        daire.run(SKAction.sequence([
-            SKAction.wait(forDuration: 0.18),
-            SKAction.fadeIn(withDuration: 0.25)
-        ]))
+        let scoreCard = SKShapeNode(path: scoreCardPath)
+        scoreCard.fillColor = UIColor(red: 0.04, green: 0.05, blue: 0.14, alpha: 1.0).sk
+        scoreCard.strokeColor = UIColor(red: 1.00, green: 0.84, blue: 0.00, alpha: 0.30).sk
+        scoreCard.lineWidth = max(1.0, screenW * 0.0025)
+        scoreCard.position = CGPoint(x: 0, y: scoreCardY)
+        scoreCard.alpha = 0
+        cardContainer.addChild(scoreCard)
 
-        let skorLabel = SKLabelNode(fontNamed: "AvenirNext-Heavy")
-        skorLabel.text      = "0"
-        skorLabel.fontSize  = daireYaricap * 0.85
-        skorLabel.fontColor = UIColor(hex: "#FFD700").sk
-        skorLabel.horizontalAlignmentMode = .center
-        skorLabel.verticalAlignmentMode   = .center
-        skorLabel.position  = CGPoint(x: 0, y: daireYaricap * 0.05)
-        skorLabel.zPosition = 2
-        daire.addChild(skorLabel)
+        let scoreLabel = SKLabelNode(text: "0")
+        scoreLabel.fontName = "AvenirNext-Heavy"
+        scoreLabel.fontSize = min(scoreCardH * 0.58, minSide * 0.12)
+        scoreLabel.fontColor = UIColor(red: 1.00, green: 0.84, blue: 0.00, alpha: 1.0)
+        scoreLabel.horizontalAlignmentMode = .center
+        scoreLabel.verticalAlignmentMode = .center
+        scoreLabel.position = CGPoint(x: 0, y: scoreCardY + scoreCardH * 0.06)
+        scoreLabel.alpha = 0
+        cardContainer.addChild(scoreLabel)
 
-        daire.run(SKAction.wait(forDuration: 0.3)) { [weak self] in
-            self?.skorSayacAnimasyonu(label: skorLabel, hedef: guncelSkor)
-        }
-        cursor -= daireYaricap      // dairenin alt kenarına in
-        cursor -= araKucuk
+        let pointLabel = SKLabelNode(text: "PUAN")
+        pointLabel.fontName = "AvenirNext-Medium"
+        pointLabel.fontSize = screenH * 0.014
+        pointLabel.fontColor = UIColor(white: 1.0, alpha: 0.42)
+        pointLabel.horizontalAlignmentMode = .center
+        pointLabel.verticalAlignmentMode = .center
+        pointLabel.position = CGPoint(x: 0, y: scoreCardY - scoreCardH * 0.24)
+        pointLabel.alpha = 0
+        cardContainer.addChild(pointLabel)
 
-        // ── 3. "PUAN" ETİKETİ ──────────────────────────────────────────
-        cursor -= puanFontH / 2
-        let puanLabel = SKLabelNode(fontNamed: "AvenirNext-Medium")
-        puanLabel.text      = "PUAN"
-        puanLabel.fontSize  = puanFontH
-        puanLabel.fontColor = UIColor.white.withAlphaComponent(0.45).sk
-        puanLabel.horizontalAlignmentMode = .center
-        puanLabel.verticalAlignmentMode   = .center
-        puanLabel.position  = CGPoint(x: 0, y: cursor)
-        puanLabel.zPosition = 1
-        puanLabel.alpha     = 0
-        kart.addChild(puanLabel)
-        puanLabel.run(SKAction.sequence([
-            SKAction.wait(forDuration: 0.25),
-            SKAction.fadeIn(withDuration: 0.20)
-        ]))
-        cursor -= puanFontH / 2
-        cursor -= araBuyuk
+        // MARK: Record / High Score
+        if isNewRecord {
+            let badgeW = cardW * 0.46
+            let badgeH = cardH * 0.07
+            let badgeRect = CGRect(x: -badgeW / 2, y: -badgeH / 2, width: badgeW, height: badgeH)
+            let badgePath = UIBezierPath(
+                roundedRect: badgeRect,
+                cornerRadius: badgeH / 2
+            ).cgPath
 
-        // ── 4. YENİ REKOR veya EN YÜKSEK ──────────────────────────────
-        cursor -= rekorFontH / 2
-        let rekorY = cursor
+            let recordBadge = SKShapeNode(path: badgePath)
+            recordBadge.fillColor = UIColor(red: 1.00, green: 0.84, blue: 0.00, alpha: 0.14).sk
+            recordBadge.strokeColor = UIColor(red: 1.00, green: 0.84, blue: 0.00, alpha: 0.34).sk
+            recordBadge.lineWidth = max(1.0, screenW * 0.002)
+            recordBadge.position = CGPoint(x: 0, y: scoreSectionBottomY)
+            recordBadge.alpha = 0
+            cardContainer.addChild(recordBadge)
 
-        if isYeniRekor {
-            let rekorLabel = SKLabelNode(fontNamed: "AvenirNext-Heavy")
-            rekorLabel.text      = "YENİ REKOR!"
-            rekorLabel.fontSize  = rekorFontH
-            rekorLabel.fontColor = UIColor(hex: "#FFD700").sk
-            rekorLabel.horizontalAlignmentMode = .center
-            rekorLabel.verticalAlignmentMode   = .center
-            rekorLabel.position  = CGPoint(x: 0, y: rekorY)
-            rekorLabel.zPosition = 1
-            rekorLabel.alpha     = 0
-            kart.addChild(rekorLabel)
-            rekorLabel.run(SKAction.sequence([
-                SKAction.wait(forDuration: 0.4),
-                SKAction.fadeIn(withDuration: 0.2)
+            let recordLabel = SKLabelNode(text: "YENİ REKOR!")
+            recordLabel.fontName = "AvenirNext-Heavy"
+            recordLabel.fontSize = screenH * 0.019
+            recordLabel.fontColor = UIColor(red: 1.00, green: 0.84, blue: 0.00, alpha: 1.0)
+            recordLabel.horizontalAlignmentMode = .center
+            recordLabel.verticalAlignmentMode = .center
+            recordLabel.position = CGPoint(x: 0, y: scoreSectionBottomY)
+            recordLabel.alpha = 0
+            cardContainer.addChild(recordLabel)
+
+            recordBadge.run(SKAction.sequence([
+                SKAction.wait(forDuration: 0.60),
+                SKAction.fadeIn(withDuration: 0.20)
             ]))
-            let nabiz = SKAction.repeatForever(SKAction.sequence([
-                SKAction.scale(to: 1.0,  duration: 0.55),
-                SKAction.scale(to: 1.10, duration: 0.55)
-            ]))
-            rekorLabel.run(SKAction.sequence([
-                SKAction.wait(forDuration: 0.6),
-                nabiz
+
+            recordLabel.run(SKAction.sequence([
+                SKAction.wait(forDuration: 0.65),
+                SKAction.fadeIn(withDuration: 0.20),
+                SKAction.repeatForever(
+                    SKAction.sequence([
+                        SKAction.scale(to: 1.04, duration: 0.45),
+                        SKAction.scale(to: 1.0, duration: 0.45)
+                    ])
+                )
             ]))
         } else {
-            let hsLabel = SKLabelNode(fontNamed: "AvenirNext-Medium")
-            hsLabel.text      = "EN YÜKSEK: \(guncelRekor)"
-            hsLabel.fontSize  = rekorFontH * 0.85
-            hsLabel.fontColor = UIColor.white.withAlphaComponent(0.55).sk
-            hsLabel.horizontalAlignmentMode = .center
-            hsLabel.verticalAlignmentMode   = .center
-            hsLabel.position  = CGPoint(x: 0, y: rekorY)
-            hsLabel.zPosition = 1
-            hsLabel.alpha     = 0
-            kart.addChild(hsLabel)
-            hsLabel.run(SKAction.sequence([
-                SKAction.wait(forDuration: 0.35),
-                SKAction.fadeIn(withDuration: 0.25)
+            let highLabel = SKLabelNode(text: "EN YÜKSEK: \(highScore)")
+            highLabel.fontName = "AvenirNext-Medium"
+            highLabel.fontSize = screenH * 0.018
+            highLabel.fontColor = UIColor(white: 1.0, alpha: 0.48)
+            highLabel.horizontalAlignmentMode = .center
+            highLabel.verticalAlignmentMode = .center
+            highLabel.position = CGPoint(x: 0, y: scoreSectionBottomY)
+            highLabel.alpha = 0
+            cardContainer.addChild(highLabel)
+
+            highLabel.run(SKAction.sequence([
+                SKAction.wait(forDuration: 0.65),
+                SKAction.fadeIn(withDuration: 0.20)
             ]))
         }
-        cursor -= rekorFontH / 2
-        cursor -= araBuyuk
 
-        // ── 5. AYIRICI ÇİZGİ ──────────────────────────────────────────
-        let ayiriciY = cursor
-        let ayiriciPath = CGMutablePath()
-        ayiriciPath.move(to:    CGPoint(x: -kartW * 0.35, y: ayiriciY))
-        ayiriciPath.addLine(to: CGPoint(x:  kartW * 0.35, y: ayiriciY))
-        let ayirici = SKShapeNode(path: ayiriciPath)
-        ayirici.strokeColor = UIColor.white.withAlphaComponent(0.12).sk
-        ayirici.lineWidth   = 1
-        ayirici.zPosition   = 1
-        ayirici.alpha       = 0
-        kart.addChild(ayirici)
-        ayirici.run(SKAction.sequence([
-            SKAction.wait(forDuration: 0.30),
-            SKAction.fadeIn(withDuration: 0.20)
-        ]))
-        cursor -= araBuyuk
-
-        // ── 6. BUTON 1 — TEKRAR OYNA ──────────────────────────────────
-        cursor -= btn1H / 2
-        let btn1Y = cursor
-        overlayButonEkle(
-            parent:    kart,
-            metin:     "TEKRAR OYNA",
-            isim:      "restartBtn",
-            renkHex:   "#00C853",
-            y:         btn1Y,
-            genislik:  kartW * 0.82,
-            yukseklik: btn1H,
-            gecikme:   0.4
+        // MARK: Separator
+        let separator = SKSpriteNode(
+            color: UIColor(white: 1.0, alpha: 0.08).sk,
+            size: CGSize(width: cardW * 0.80, height: max(1, screenH * 0.0016))
         )
-        cursor -= btn1H / 2
-        cursor -= btnAra
+        separator.position = CGPoint(x: 0, y: separatorY)
+        separator.alpha = 0
+        cardContainer.addChild(separator)
 
-        // ── 7. BUTON 2 — ANA MENÜ ──────────────────────────────────────
-        cursor -= btn2H / 2
-        let btn2Y = cursor
-        overlayIkincilButonEkle(
-            parent:    kart,
-            metin:     "Ana Menü",
-            isim:      "homeBtn",
-            y:         btn2Y,
-            genislik:  kartW * 0.65,
-            yukseklik: btn2H,
-            gecikme:   0.5
+        // MARK: Buttons
+        let primaryButtonWidth = cardW * 0.80
+        let primaryButtonHeight = cardH * 0.105
+
+        let primaryRect = CGRect(
+            x: -primaryButtonWidth / 2,
+            y: -primaryButtonHeight / 2,
+            width: primaryButtonWidth,
+            height: primaryButtonHeight
         )
-        // cursor -= btn2H / 2 + padV  → alt kenar = -(kartH/2) ✓
-    }
+        let primaryPath = UIBezierPath(
+            roundedRect: primaryRect,
+            cornerRadius: primaryButtonHeight / 2
+        ).cgPath
 
-    // MARK: - Skor Sayaç Animasyonu
+        let playButton = SKShapeNode(path: primaryPath)
+        playButton.fillColor = UIColor(red: 0.08, green: 0.78, blue: 0.33, alpha: 1.0).sk
+        playButton.strokeColor = .clear
+        playButton.position = CGPoint(x: 0, y: primaryButtonY)
+        playButton.name = "tekrarOyna"
+        playButton.alpha = 0
+        cardContainer.addChild(playButton)
 
-    /// Skor etiketi 0'dan hedef değere kademeli olarak artarak gider.
-    /// "Sayıyor" hissi oyuncuya skor dramatikliği katar.
-    private func skorSayacAnimasyonu(label: SKLabelNode, hedef: Int) {
-        guard hedef > 0 else {
-            label.text = "0"
-            return
+        let playLabel = SKLabelNode(text: "TEKRAR OYNA")
+        playLabel.fontName = "AvenirNext-Heavy"
+        playLabel.fontSize = screenH * 0.020
+        playLabel.fontColor = .white
+        playLabel.horizontalAlignmentMode = .center
+        playLabel.verticalAlignmentMode = .center
+        playLabel.name = "tekrarOyna"
+        playButton.addChild(playLabel)
+
+        let secondaryButtonWidth = cardW * 0.80
+        let secondaryButtonHeight = cardH * 0.090
+
+        let secondaryRect = CGRect(
+            x: -secondaryButtonWidth / 2,
+            y: -secondaryButtonHeight / 2,
+            width: secondaryButtonWidth,
+            height: secondaryButtonHeight
+        )
+        let secondaryPath = UIBezierPath(
+            roundedRect: secondaryRect,
+            cornerRadius: secondaryButtonHeight / 2
+        ).cgPath
+
+        let menuButton = SKShapeNode(path: secondaryPath)
+        menuButton.fillColor = UIColor(red: 1, green: 1, blue: 1, alpha: 0.03).sk
+        menuButton.strokeColor = UIColor(white: 1.0, alpha: 0.18).sk
+        menuButton.lineWidth = max(1.0, screenW * 0.002)
+        menuButton.position = CGPoint(x: 0, y: secondaryButtonY)
+        menuButton.name = "anaMenu"
+        menuButton.alpha = 0
+        cardContainer.addChild(menuButton)
+
+        let menuLabel = SKLabelNode(text: "Ana Menü")
+        menuLabel.fontName = "AvenirNext-Medium"
+        menuLabel.fontSize = screenH * 0.018
+        menuLabel.fontColor = UIColor(white: 1.0, alpha: 0.60)
+        menuLabel.horizontalAlignmentMode = .center
+        menuLabel.verticalAlignmentMode = .center
+        menuLabel.name = "anaMenu"
+        menuButton.addChild(menuLabel)
+
+        // MARK: Entrance animations
+        let animatedElements: [(SKNode, TimeInterval)] = [
+            (titleLabel, 0.18),
+            (titleLine, 0.24),
+            (scoreGlow, 0.30),
+            (scoreCard, 0.30),
+            (scoreLabel, 0.36),
+            (pointLabel, 0.40),
+            (separator, 0.54),
+            (playButton, 0.60),
+            (menuButton, 0.68)
+        ]
+
+        for (node, delay) in animatedElements {
+            node.run(SKAction.sequence([
+                SKAction.wait(forDuration: delay),
+                SKAction.fadeIn(withDuration: 0.20)
+            ]))
         }
 
-        // Her adımda ne kadar artacağı: çok küçükse çok uzun sürer, büyükse hızlı biter
-        // Yaklaşık 30 adımda tamamlansın
-        let adimBuyuklugu = max(1, hedef / 30)
-        var gosterilenDeger = 0
+        // Score count animation
+        if score > 0 {
+            let totalDuration: TimeInterval = 0.75
+            let steps = max(1, min(score, 45))
+            let stepDuration = totalDuration / Double(steps)
+            let increment = max(1, score / steps)
+            var displayScore = 0
 
-        let sayacEylemi = SKAction.repeatForever(SKAction.sequence([
-            SKAction.wait(forDuration: 0.022),
-            SKAction.run { [weak label] in
-                guard let label = label else { return }
-                gosterilenDeger += adimBuyuklugu
-                if gosterilenDeger >= hedef {
-                    gosterilenDeger = hedef
-                    // Hedefe ulaştı — sadece sayaç aksiyonunu durdur, diğer aksiyonlar etkilenmez
-                    // removeAllActions() yerine key-based silme: label'a eklenen başka aksiyonlar korunur
-                    label.removeAction(forKey: "skorSayac")
-                }
-                label.text = "\(gosterilenDeger)"
-            }
-        ]))
-        label.run(sayacEylemi, withKey: "skorSayac")
-    }
+            let countAction = SKAction.repeat(
+                SKAction.sequence([
+                    SKAction.wait(forDuration: stepDuration),
+                    SKAction.run {
+                        displayScore = min(displayScore + increment, score)
+                        scoreLabel.text = "\(displayScore)"
+                    }
+                ]),
+                count: steps
+            )
 
-    // MARK: - Birincil Buton
+            scoreLabel.run(SKAction.sequence([
+                SKAction.wait(forDuration: 0.42),
+                countAction,
+                SKAction.run { scoreLabel.text = "\(score)" }
+            ]))
+        } else {
+            scoreLabel.text = "0"
+        }
 
-    /// Dolu renkli, glass highlight'lı birincil eylem butonu.
-    func overlayButonEkle(parent: SKNode, metin: String, isim: String,
-                          renkHex: String, y: CGFloat,
-                          genislik: CGFloat, yukseklik: CGFloat,
-                          gecikme: Double) {
-        let koseBoyutu = yukseklik / 2
-
-        // Gölge
-        let golgeRect = CGRect(x: -genislik / 2, y: -yukseklik / 2, width: genislik, height: yukseklik)
-        let golge     = SKShapeNode(rect: golgeRect, cornerRadius: koseBoyutu)
-        golge.fillColor   = UIColor.black.withAlphaComponent(0.28).sk
-        golge.strokeColor = .clear
-        golge.position    = CGPoint(x: 0, y: y - yukseklik * 0.06)
-        golge.zPosition   = 1
-        golge.alpha       = 0
-        parent.addChild(golge)
-
-        // Buton
-        let btnRect = CGRect(x: -genislik / 2, y: -yukseklik / 2, width: genislik, height: yukseklik)
-        let btn     = SKShapeNode(rect: btnRect, cornerRadius: koseBoyutu)
-        btn.fillColor   = UIColor(hex: renkHex).sk
-        btn.strokeColor = .clear
-        btn.name        = isim
-        btn.position    = CGPoint(x: 0, y: y)
-        btn.zPosition   = 2
-        btn.alpha       = 0
-        parent.addChild(btn)
-
-        // Üst highlight — glass morphism hissi
-        let glassW    = genislik * 0.90
-        let glassH    = yukseklik * 0.40
-        let glassRect = CGRect(x: -glassW / 2, y: 0, width: glassW, height: glassH)
-        let glass     = SKShapeNode(rect: glassRect, cornerRadius: koseBoyutu)
-        glass.fillColor   = UIColor.white.withAlphaComponent(0.12).sk
-        glass.strokeColor = .clear
-        glass.zPosition   = 0.5
-        glass.name        = isim
-        btn.addChild(glass)
-
-        // Buton yazısı — font boyutu buton yüksekliğine orantılı
-        let lbl = SKLabelNode(fontNamed: "AvenirNext-Heavy")
-        lbl.text                  = metin
-        lbl.fontSize              = yukseklik * 0.42
-        lbl.fontColor             = .white
-        lbl.horizontalAlignmentMode = .center
-        lbl.verticalAlignmentMode   = .center
-        lbl.position  = .zero
-        lbl.zPosition = 1
-        lbl.name      = isim
-        btn.addChild(lbl)
-
-        // Metnin butona sığıp sığmadığını kontrol et
-        klipla(lbl, maxWidth: genislik * 0.84)
-
-        // Fade in animasyonu — gecikmeli
-        let fadeIn = SKAction.sequence([
-            SKAction.wait(forDuration: gecikme),
-            SKAction.fadeIn(withDuration: 0.25)
+        // Soft pulse on score card
+        let pulseAction = SKAction.sequence([
+            SKAction.group([
+                SKAction.scale(to: 1.03, duration: 0.7),
+                SKAction.fadeAlpha(to: 0.75, duration: 0.7)
+            ]),
+            SKAction.group([
+                SKAction.scale(to: 1.0, duration: 0.7),
+                SKAction.fadeAlpha(to: 1.0, duration: 0.7)
+            ])
         ])
-        btn.run(fadeIn)
-        golge.run(fadeIn)
-    }
 
-    // MARK: - İkincil Buton
-
-    /// Şeffaf arka plan, hafif border — ikincil eylem görünümü.
-    private func overlayIkincilButonEkle(parent: SKNode, metin: String, isim: String,
-                                          y: CGFloat, genislik: CGFloat, yukseklik: CGFloat,
-                                          gecikme: Double) {
-        let koseBoyutu = yukseklik / 2
-
-        let btnRect = CGRect(x: -genislik / 2, y: -yukseklik / 2, width: genislik, height: yukseklik)
-        let btn     = SKShapeNode(rect: btnRect, cornerRadius: koseBoyutu)
-        btn.fillColor   = .clear
-        btn.strokeColor = UIColor.white.withAlphaComponent(0.30).sk
-        btn.lineWidth   = 1
-        btn.name        = isim
-        btn.position    = CGPoint(x: 0, y: y)
-        btn.zPosition   = 2
-        btn.alpha       = 0
-        parent.addChild(btn)
-
-        let lbl = SKLabelNode(fontNamed: "AvenirNext-Medium")
-        lbl.text                  = metin
-        lbl.fontSize              = yukseklik * 0.40
-        lbl.fontColor             = UIColor.white.withAlphaComponent(0.70).sk
-        lbl.horizontalAlignmentMode = .center
-        lbl.verticalAlignmentMode   = .center
-        lbl.position  = .zero
-        lbl.zPosition = 1
-        lbl.name      = isim
-        btn.addChild(lbl)
-
-        btn.run(SKAction.sequence([
-            SKAction.wait(forDuration: gecikme),
-            SKAction.fadeIn(withDuration: 0.25)
+        scoreGlow.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.45),
+            SKAction.repeatForever(pulseAction)
         ]))
     }
 
-    // MARK: - Dokunma Yönetimi
+    func showGameOverOverlay() {
+        let score = manager.score
+        let highScore = manager.highScore
+        let isNewRecord = score >= highScore
+        showGameOverOverlay(score: score, highScore: highScore, isNewRecord: isNewRecord)
+    }
+
+    func hideGameOverOverlay() {
+        overlayNode?.removeAllActions()
+        overlayNode?.run(SKAction.sequence([
+            SKAction.fadeOut(withDuration: 0.22),
+            SKAction.removeFromParent()
+        ]))
+        overlayNode = nil
+    }
 
     func handleOverlayTap(_ node: SKNode) {
         switch node.name {
-        case "restartBtn":
+        case "tekrarOyna":
             butonBasAnimasyonu(node) { [weak self] in
                 HapticManager.impact(.medium)
+                self?.hideGameOverOverlay()
                 self?.restartGame()
             }
-        case "homeBtn":
+
+        case "anaMenu":
             butonBasAnimasyonu(node) { [weak self] in
                 HapticManager.impact(.light)
+                self?.hideGameOverOverlay()
                 self?.goToHome()
             }
+
         default:
             break
         }
     }
 
-    // MARK: - Yardımcı Fonksiyonlar
+    // MARK: - Private
 
-    /// Buton press animasyonu: hafifçe küçülür, geri döner, sonra aksiyon tetiklenir.
     private func butonBasAnimasyonu(_ node: SKNode, tamamlanma: @escaping () -> Void) {
-        // Dokunulan node veya parent'ı bul — label'a dokunulmuş olabilir
-        let hedef: SKNode = {
-            if let isim = node.name, let ust = node.parent, ust.name == isim { return ust }
+        let target: SKNode = {
+            if let name = node.name, let parent = node.parent, parent.name == name {
+                return parent
+            }
             return node
         }()
-        hedef.removeAllActions()
-        hedef.run(SKAction.sequence([
-            SKAction.scale(to: 0.93, duration: 0.07),
-            SKAction.scale(to: 1.00, duration: 0.08),
+
+        target.removeAllActions()
+        target.run(SKAction.sequence([
+            SKAction.scale(to: 0.96, duration: 0.08),
+            SKAction.scale(to: 1.0, duration: 0.08),
             SKAction.run(tamamlanma)
         ]))
-    }
-
-    /// Label metni butonun sınırını aşıyorsa ölçekle — taşma önleme.
-    func klipla(_ lbl: SKLabelNode, maxWidth: CGFloat) {
-        guard lbl.frame.width > maxWidth, maxWidth > 0 else { return }
-        lbl.setScale(maxWidth / lbl.frame.width)
     }
 }
