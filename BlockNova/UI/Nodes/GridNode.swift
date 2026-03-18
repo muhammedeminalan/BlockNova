@@ -183,6 +183,79 @@ final class GridNode: SKNode {
         highlightedPositions = positions.filter { isValid(row: $0.row, col: $0.col) }
     }
 
+    // MARK: - Satir/Sutun Dolacak Preview
+
+    /// Yerleştirince dolacak satırları hesaplar — preview icin
+    func rowsThatWillClear(if shape: BlockShape, at startRow: Int, col startCol: Int) -> [Int] {
+        var tempCells = cellColors
+        // Seklin sol-ust referansini hizalamak icin min offsetleri kullan
+        let minRow = shape.offsets.map(\.row).min() ?? 0
+        let minCol = shape.offsets.map(\.col).min() ?? 0
+
+        for offset in shape.offsets {
+            let r = startRow + offset.row - minRow
+            let c = startCol + offset.col - minCol
+            guard r >= 0, r < C.rows, c >= 0, c < C.cols else { continue }
+            tempCells[r][c] = UIColor.white
+        }
+
+        return (0..<C.rows).filter { row in
+            (0..<C.cols).allSatisfy { tempCells[row][$0] != nil }
+        }
+    }
+
+    /// Yerleştirince dolacak sütunları hesaplar — preview icin
+    func colsThatWillClear(if shape: BlockShape, at startRow: Int, col startCol: Int) -> [Int] {
+        var tempCells = cellColors
+        let minRow = shape.offsets.map(\.row).min() ?? 0
+        let minCol = shape.offsets.map(\.col).min() ?? 0
+
+        for offset in shape.offsets {
+            let r = startRow + offset.row - minRow
+            let c = startCol + offset.col - minCol
+            guard r >= 0, r < C.rows, c >= 0, c < C.cols else { continue }
+            tempCells[r][c] = UIColor.white
+        }
+
+        return (0..<C.cols).filter { col in
+            (0..<C.rows).allSatisfy { tempCells[$0][col] != nil }
+        }
+    }
+
+    /// Dolacak satır/sütun hücrelerini yanıp söndürür
+    func flashWillClear(rows: [Int], cols: [Int]) {
+        var affectedCells: [SKSpriteNode] = []
+
+        for row in rows {
+            for col in 0..<C.cols { affectedCells.append(cellNodes[row][col]) }
+        }
+        for col in cols {
+            for row in 0..<C.rows {
+                if !rows.contains(row) { affectedCells.append(cellNodes[row][col]) }
+            }
+        }
+
+        let flashColor = UIColor(red: 1, green: 0.9, blue: 0, alpha: 1).sk
+
+        for cell in affectedCells {
+            cell.removeAction(forKey: "willClearFlash")
+            // Patlama olacaksa tek renk goster — daha net sinyal
+            cell.color = flashColor
+        }
+    }
+
+    /// Sürükleme bitince preview flash temizlenir
+    func clearWillClearFlash() {
+        for row in 0..<C.rows {
+            for col in 0..<C.cols {
+                let cell = cellNodes[row][col]
+                cell.removeAction(forKey: "willClearFlash")
+                let originalColor = cellColors[row][col] ?? C.cellEmptyColor
+                cell.color = originalColor.sk
+            }
+        }
+    }
+
     /// Sadece highlight edilmis hucreleri gercek renklerine dondurur.
     /// Tum 64 hucreyi degil, yalnizca birkac hucreyi gunceller — performans kritik.
     func clearHighlight() {
@@ -326,22 +399,112 @@ final class GridNode: SKNode {
 
         let lineCount = rowsToClear.count + colsToClear.count
 
-        // Combo seviyesine gore efekt uygula — tek cizgi sadedir, combo giderek guclu
-        playLineClearEffect(
-            lineCount:             lineCount,
-            nodes:                 affectedNodes,
-            colors:                affectedColors,
-            worldPositions:        affectedWorldPositions
-        )
-
-        // Flash suresi bittikten sonra veri ve gorsel temizle
-        // 0.18: flash animasyonunun tamamlanma suresiyle eslesir — ani kaybolusluk onlenir
-        run(SKAction.wait(forDuration: 0.18)) { [weak self] in
+        // Combo seviyesine gore patlama animasyonu uygula
+        explodeLine(cells: affectedNodes, lineCount: lineCount) { [weak self] in
             guard let self = self else { return }
+            // Patlama bittikten sonra hucreleri temizle
             for row in rowsToClear { for col in 0..<C.cols { self.clearCell(row: row, col: col) } }
             for col in colsToClear { for row in 0..<C.rows { self.clearCell(row: row, col: col) } }
             self.delegate?.gridDidClearLines(lineCount)
             self.delegate?.gridDidFinishPlacement()
+        }
+    }
+
+    // MARK: - Patlama Animasyonu
+
+    /// Tek bir hucreyi parcalara bolup patlatir
+    private func explodeCell(_ cell: SKSpriteNode, distanceRange: ClosedRange<CGFloat>, duration: TimeInterval, completion: @escaping () -> Void) {
+        guard let scene = scene else {
+            completion()
+            return
+        }
+
+        // Parca siniri: ayni anda max 150
+        let mevcutPartikul = scene.children.filter { $0.zPosition == 150 }.count
+        guard mevcutPartikul < 150 else {
+            cell.isHidden = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+                cell.isHidden = false
+                completion()
+            }
+            return
+        }
+
+        let cellColor = cell.color
+        let worldPos = cell.parent?.convert(cell.position, to: scene) ?? cell.position
+
+        // Hücreyi gizle
+        cell.isHidden = true
+
+        let particleCount = 7
+        for i in 0..<particleCount {
+            let size = CGFloat.random(in: cell.size.width * 0.2 ... cell.size.width * 0.45)
+            let particle = SKSpriteNode(color: cellColor, size: CGSize(width: size, height: size))
+            particle.position = worldPos
+            particle.zPosition = 150
+            particle.alpha = 1.0
+            scene.addChild(particle)
+
+            let angle = (CGFloat(i) / CGFloat(particleCount)) * 2 * .pi + CGFloat.random(in: -0.3...0.3)
+            let distance = CGFloat.random(in: distanceRange)
+            let dx = cos(angle) * distance
+            let dy = sin(angle) * distance
+
+            let flyOut = SKAction.group([
+                SKAction.moveBy(x: dx, y: dy, duration: duration),
+                SKAction.rotate(byAngle: CGFloat.random(in: -.pi ... .pi), duration: duration),
+                SKAction.scale(to: 0.1, duration: duration),
+                SKAction.fadeOut(withDuration: duration * 0.85)
+            ])
+
+            particle.run(SKAction.sequence([
+                flyOut,
+                SKAction.removeFromParent()
+            ]))
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+            cell.isHidden = false
+            completion()
+        }
+    }
+
+    /// Satır/sütun patlaması — dalga efekti
+    private func explodeLine(cells: [SKSpriteNode], lineCount: Int, completion: @escaping () -> Void) {
+        var completed = 0
+        let total = cells.count
+
+        let distanceRange: ClosedRange<CGFloat>
+        let duration: TimeInterval
+
+        switch lineCount {
+        case 1:
+            distanceRange = 25...55
+            duration = 0.35
+        case 2:
+            distanceRange = 40...80
+            duration = 0.30
+        default:
+            distanceRange = 60...120
+            duration = 0.32
+            let shake = SKAction.sequence([
+                SKAction.moveBy(x: -6, y: 0, duration: 0.03),
+                SKAction.moveBy(x: 12, y: 0, duration: 0.06),
+                SKAction.moveBy(x: -6, y: 0, duration: 0.03)
+            ])
+            scene?.run(shake)
+        }
+
+        for (index, cell) in cells.enumerated() {
+            let delay = Double(index) * 0.03
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.explodeCell(cell, distanceRange: distanceRange, duration: duration) {
+                    completed += 1
+                    if completed >= total {
+                        completion()
+                    }
+                }
+            }
         }
     }
 

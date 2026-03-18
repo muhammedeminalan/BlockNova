@@ -414,6 +414,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         }
 
         gridNode.clearHighlight()
+        gridNode.clearWillClearFlash()
         lastHighlightAnchor = nil
         draggedPiece        = nil
         lastTouchLocation   = nil
@@ -422,6 +423,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         if let piece = draggedPiece {
             gridNode.clearHighlight()
+            gridNode.clearWillClearFlash()
             lastHighlightAnchor = nil
             cancelDrag(for: piece, playInvalidSound: false)
             draggedPiece = nil
@@ -443,6 +445,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     private func updateHighlight(for piece: PieceNode) {
         guard let (row, col) = gridNode.nearestCell(for: piece.position, piece: piece) else {
             if lastHighlightAnchor != nil { gridNode.clearHighlight() }
+            gridNode.clearWillClearFlash()
             lastHighlightAnchor = nil
             return
         }
@@ -451,11 +454,23 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         if let last = lastHighlightAnchor, last.row == row, last.col == col { return }
         lastHighlightAnchor = (row: row, col: col)
 
+        // Önce flash preview'i temizle
+        gridNode.clearWillClearFlash()
+
         let positions: [(row: Int, col: Int)] = piece.normalizedOffsets.map {
             (row: row + $0.row, col: col + $0.col)
         }
         let valid = gridNode.canPlace(normalizedOffsets: piece.normalizedOffsets, at: row, col: col)
         gridNode.highlight(positions: positions, valid: valid)
+
+        guard valid else { return }
+
+        // Yerleştirince dolacak satır/sütunları hesapla ve yanıp söndür
+        let willClearRows = gridNode.rowsThatWillClear(if: piece.shape, at: row, col: col)
+        let willClearCols = gridNode.colsThatWillClear(if: piece.shape, at: row, col: col)
+        if !willClearRows.isEmpty || !willClearCols.isEmpty {
+            gridNode.flashWillClear(rows: willClearRows, cols: willClearCols)
+        }
     }
 
     // MARK: - Yerleştirme
