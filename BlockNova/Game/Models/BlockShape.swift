@@ -10,6 +10,7 @@ import UIKit
 // String rawValue eklendi — GameSaveManager'da JSON serileştirme için gerekli
 enum BlockShapeType: String, CaseIterable {
     case single      = "single"
+    case singleGold  = "singleGold"
     case horizontal2 = "horizontal2"
     case horizontal3 = "horizontal3"
     case horizontal4 = "horizontal4"
@@ -21,14 +22,20 @@ enum BlockShapeType: String, CaseIterable {
     case square2x2   = "square2x2"
     case rect2x3     = "rect2x3"
     case rect3x2     = "rect3x2"
-    case square3x3   = "square3x3"  // 3x3 tam kare — 9 hücre, en büyük şekil
+    case square3x3   = "square3x3"  // 3x3 tam kare — 9 hücre
+    case square4x4   = "square4x4"  // 4x4 tam kare — 16 hücre, en büyük dikdörtgen
+    case rect3x4     = "rect3x4"
+    case rect4x3     = "rect4x3"
     case lShape      = "lShape"
     case jShape      = "jShape"
+    case lShapeUp    = "lShapeUp"
+    case lShapeUpLeft = "lShapeUpLeft"
+    case lShape4     = "lShape4"
+    case jShape4     = "jShape4"
     case miniL       = "miniL"
     case miniJ       = "miniJ"
+    case miniLUp     = "miniLUp"
     case cornerShape = "cornerShape"
-    case smallT      = "smallT"
-    case tShape      = "tShape"
     case sShape      = "sShape"
     case zShape      = "zShape"
 }
@@ -73,6 +80,12 @@ extension BlockShape {
         BlockShape(type: .single,
                    offsets: [(0,0)],
                    color: C.colorSingle,
+                   category: .micro),
+
+        // Altin tek hucre — kurtarici parca, nadir gelmeli
+        BlockShape(type: .singleGold,
+                   offsets: [(0,0)],
+                   color: C.colorSingleGold,
                    category: .micro),
 
         // 2'li yatay — dar yerlere sığar
@@ -144,13 +157,39 @@ extension BlockShape {
                    color: C.colorRect3x2,
                    category: .rectangle),
 
-        // 3x3 tam dolu kare — 9 hücre, en büyük ve en yüksek skorlu şekil
+        // 3x3 tam dolu kare — 9 hücre
         // Satır+sütun kombinasyonları silerse muazzam combo yapılabilir
         BlockShape(type: .square3x3,
                    offsets: [(0,0),(0,1),(0,2),
                               (1,0),(1,1),(1,2),
                               (2,0),(2,1),(2,2)],
                    color: C.colorSquare3,
+                   category: .rectangle),
+
+        // 4x4 tam dolu kare — 16 hücre, en büyük dikdörtgen
+        BlockShape(type: .square4x4,
+                   offsets: [(0,0),(0,1),(0,2),(0,3),
+                             (1,0),(1,1),(1,2),(1,3),
+                             (2,0),(2,1),(2,2),(2,3),
+                             (3,0),(3,1),(3,2),(3,3)],
+                   color: C.colorSquare4,
+                   category: .rectangle),
+
+        // 3x4 dikdörtgen — 12 hücre
+        BlockShape(type: .rect3x4,
+                   offsets: [(0,0),(0,1),(0,2),(0,3),
+                             (1,0),(1,1),(1,2),(1,3),
+                             (2,0),(2,1),(2,2),(2,3)],
+                   color: C.colorRect3x4,
+                   category: .rectangle),
+
+        // 4x3 dikdörtgen — 12 hücre
+        BlockShape(type: .rect4x3,
+                   offsets: [(0,0),(0,1),(0,2),
+                             (1,0),(1,1),(1,2),
+                             (2,0),(2,1),(2,2),
+                             (3,0),(3,1),(3,2)],
+                   color: C.colorRect4x3,
                    category: .rectangle),
 
         // L şekli — sağ alt köşeyi doldurur
@@ -165,6 +204,30 @@ extension BlockShape {
                    color: C.colorJ,
                    category: .corner),
 
+        // L şekli — sağ üst köşe
+        BlockShape(type: .lShapeUp,
+                   offsets: [(0,0),(0,1),(1,0),(2,0)],
+                   color: C.colorLUp,
+                   category: .corner),
+
+        // L şekli — sol üst köşe
+        BlockShape(type: .lShapeUpLeft,
+                   offsets: [(0,0),(0,1),(1,1),(2,1)],
+                   color: C.colorLUpLeft,
+                   category: .corner),
+
+        // Büyük L — 4 uzunluk, 2 taban
+        BlockShape(type: .lShape4,
+                   offsets: [(0,0),(1,0),(2,0),(3,0),(3,1)],
+                   color: C.colorL4,
+                   category: .corner),
+
+        // Büyük J — 4 uzunluk, 2 taban
+        BlockShape(type: .jShape4,
+                   offsets: [(0,1),(1,1),(2,1),(3,0),(3,1)],
+                   color: C.colorJ4,
+                   category: .corner),
+
         // Mini L — kısa köşe parçası
         BlockShape(type: .miniL,
                    offsets: [(0,0),(1,0),(1,1)],
@@ -177,24 +240,17 @@ extension BlockShape {
                    color: C.colorMiniJ,
                    category: .corner),
 
+        // Mini L — yukari bakan kisa kose parcası
+        BlockShape(type: .miniLUp,
+                   offsets: [(0,0),(0,1),(1,0)],
+                   color: C.colorMiniLUp,
+                   category: .corner),
+
         // Corner şekli — farklı köşe orientasyonu
         BlockShape(type: .cornerShape,
                    offsets: [(0,0),(0,1),(1,1)],
                    color: C.colorCorner,
                    category: .corner),
-
-        // Small T — dar T
-        BlockShape(type: .smallT,
-                   offsets: [(0,0),(0,1),(0,2),
-                             (1,1),(2,1)],
-                   color: C.colorSmallT,
-                   category: .tType),
-
-        // T şekli — orta satırı çıkıntılı doldurur
-        BlockShape(type: .tShape,
-                   offsets: [(0,0),(0,1),(0,2),(1,1)],
-                   color: C.colorT,
-                   category: .tType),
 
         // S şekli — çapraz adım
         BlockShape(type: .sShape,

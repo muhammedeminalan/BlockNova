@@ -121,6 +121,7 @@ enum C {
     // MARK: - Blok Renkleri (Neon Palet)
     // Her şekil tipi sabit bir renk alır — oyuncu şekli renkle tanır
     static let colorSingle      = UIColor(hex: "#FF5C6C") // Canlı kırmızı
+    static let colorSingleGold  = UIColor(red: 1.0,  green: 0.85, blue: 0.20, alpha: 1) // Altin tek hucre
     static let colorH2          = UIColor(hex: "#FF7A3D") // Sıcak turuncu
     static let colorH3          = UIColor(hex: "#FFD166") // Altın sarı
     static let colorV2          = UIColor(hex: "#2FE38C") // Taze yeşil
@@ -132,16 +133,24 @@ enum C {
     static let colorS           = UIColor(hex: "#52E35F") // Lime yeşil
     static let colorZ           = UIColor(hex: "#D774FF") // Orkide
     static let colorSquare3     = UIColor(hex: "#FF3D5A") // Ateş kırmızısı — 3x3 en büyük blok
+    static let colorSquare4     = UIColor(red: 1.0,  green: 0.55, blue: 0.0,  alpha: 1) // Turuncu
     static let colorH4          = UIColor(hex: "#00C2FF") // Uzun yatay (4)
     static let colorH5          = UIColor(hex: "#2ACBFF") // Uzun yatay (5)
     static let colorV4          = UIColor(hex: "#6DD400") // Uzun dikey (4)
     static let colorV5          = UIColor(hex: "#4CD137") // Uzun dikey (5)
     static let colorRect2x3     = UIColor(hex: "#FFB347") // 2x3 dikdörtgen
     static let colorRect3x2     = UIColor(hex: "#FFA24B") // 3x2 dikdörtgen
+    static let colorRect3x4     = UIColor(red: 0.70, green: 0.40, blue: 1.0,  alpha: 1) // Acik mor
+    static let colorRect4x3     = UIColor(red: 0.90, green: 0.75, blue: 0.0,  alpha: 1) // Koyu sari
     static let colorMiniL       = UIColor(hex: "#FF6BCB") // Mini L
     static let colorMiniJ       = UIColor(hex: "#4DE2FF") // Mini J
+    static let colorMiniLUp     = UIColor(red: 0.90, green: 0.50, blue: 0.20, alpha: 1) // Mini L ust
     static let colorCorner      = UIColor(hex: "#9C7CFF") // Corner
     static let colorSmallT      = UIColor(hex: "#FFC857") // Small T
+    static let colorLUp         = UIColor(red: 0.60, green: 0.20, blue: 0.90, alpha: 1) // L ust
+    static let colorLUpLeft     = UIColor(red: 0.20, green: 0.70, blue: 0.90, alpha: 1) // L ust sol
+    static let colorL4          = UIColor(red: 1.0,  green: 0.40, blue: 0.70, alpha: 1) // L4
+    static let colorJ4          = UIColor(red: 0.40, green: 0.90, blue: 0.60, alpha: 1) // J4
 
     // MARK: - Scoring
     static let scoreCellBase: Int = 2

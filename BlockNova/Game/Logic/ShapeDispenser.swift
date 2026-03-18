@@ -69,40 +69,57 @@ final class ShapeDispenser {
     private let kategoriAzaltmaKatsayisi: Double = 0.65
 
     /// Grid doluluğu bu eşiği aşarsa küçük/yardımcı parçalara hafif ağırlık ekle
-    private let crowdingHelperThreshold: Double = 0.62
+    private let crowdingHelperThreshold: Double = 0.58
 
     /// Yardımcı parça bias katsayısı — düşük tutulur, bariz kıyak hissi vermez
-    private let crowdingHelperBoost: Double = 1.15
+    private let crowdingHelperBoost: Double = 1.25
 
     // MARK: - Production Havuzları
 
     /// Production pool — Block Blast hissine yakın set
     private let productionPool: [BlockShapeType] = [
-        .single,
+        .single, .singleGold,
         .horizontal2, .horizontal3, .horizontal4, .horizontal5,
         .vertical2, .vertical3, .vertical4, .vertical5,
-        .square2x2, .square3x3, .rect2x3, .rect3x2,
-        .miniL, .miniJ, .lShape, .jShape, .cornerShape,
-        .smallT, .tShape,
+        .square2x2, .square3x3, .square4x4, .rect2x3, .rect3x2, .rect3x4, .rect4x3,
+        .miniL, .miniJ, .miniLUp,
+        .lShape, .jShape, .lShapeUp, .lShapeUpLeft, .lShape4, .jShape4, .cornerShape,
         .sShape, .zShape
     ]
 
     /// Sıklık havuzları — ağırlıklandırma için
     private let commonPool: Set<BlockShapeType> = [
-        .single, .horizontal2, .horizontal3, .vertical2, .vertical3, .square2x2, .miniL, .miniJ
+        .single, .horizontal2, .horizontal3, .vertical2, .vertical3, .square2x2, .miniL, .miniJ, .miniLUp
     ]
 
     private let uncommonPool: Set<BlockShapeType> = [
-        .horizontal4, .vertical4, .rect2x3, .rect3x2, .smallT, .lShape, .jShape, .sShape, .zShape, .cornerShape
+        .horizontal4, .vertical4, .rect2x3, .rect3x2, .rect3x4, .rect4x3,
+        .lShape, .jShape, .lShapeUp, .lShapeUpLeft, .cornerShape, .sShape, .zShape
     ]
 
     private let rarePool: Set<BlockShapeType> = [
-        .horizontal5, .vertical5, .square3x3, .tShape
+        .singleGold,
+        .horizontal5, .vertical5, .square3x3, .square4x4, .lShape4, .jShape4
     ]
 
     /// Yardımcı parça havuzu — grid sıkışınca hafif bias alır
     private let helperPool: Set<BlockShapeType> = [
-        .single, .horizontal2, .horizontal3, .vertical2, .vertical3, .square2x2, .miniL, .miniJ
+        .single, .singleGold,
+        .horizontal2, .horizontal3, .vertical2, .vertical3,
+        .square2x2, .miniL, .miniJ, .miniLUp
+    ]
+
+    // MARK: - Kategori Agirliklari
+
+    /// Her kategorinin havuzdaki agirligi
+    /// Yuksek sayi = daha sik cikar
+    private let categoryWeights: [ShapeCategory: Int] = [
+        .micro:     4,   // Tek hucre — daha sik gelsin
+        .line:      4,   // Cizgiler — daha rahat oynanis
+        .rectangle: 5,   // Kareler ve dikdortgenler — cok ciksin
+        .corner:    3,   // L sekilleri — orta
+        .zigzag:    1,   // S/Z — az ciksin
+        .tType:     0    // T sekli — hic cikmasin
     ]
 
     /// Tip → kategori map'i — tekrar penaltesi için
@@ -218,10 +235,10 @@ final class ShapeDispenser {
         switch hint {
         case .horizontal:
             // Satır tamamlamada işe yarayan yatay ağırlıklı şekiller
-            return [.horizontal2, .horizontal3, .horizontal4, .horizontal5, .rect3x2, .tShape, .smallT, .sShape, .zShape]
+            return [.horizontal2, .horizontal3, .horizontal4, .horizontal5, .rect3x2, .rect4x3, .sShape, .zShape]
         case .vertical:
             // Sütun tamamlamada işe yarayan dikey ağırlıklı şekiller
-            return [.vertical2, .vertical3, .vertical4, .vertical5, .rect2x3, .lShape, .jShape, .miniL, .miniJ, .cornerShape]
+            return [.vertical2, .vertical3, .vertical4, .vertical5, .rect2x3, .rect3x4, .lShape, .jShape, .lShapeUp, .lShapeUpLeft, .miniL, .miniJ, .miniLUp, .cornerShape]
         case .any:
             // Yön fark etmez — tüm şekiller eşit şanslı
             return productionPool
@@ -245,6 +262,14 @@ final class ShapeDispenser {
         // Fit count olanlar varken 0-fit olanları ele — gereksiz tıkanmayı azalt
         let fitliAdaylar = adaylar.filter { (fitMap[$0] ?? 0) > 0 }
         if !fitliAdaylar.isEmpty { adaylar = fitliAdaylar }
+
+        // Son 3 parçada Z veya S varsa bir daha cikmasin
+        let zigzagTypes: [BlockShapeType] = [.sShape, .zShape]
+        let recentZigzag = recentShapes.suffix(3).contains { zigzagTypes.contains($0) }
+        if recentZigzag {
+            let zigzagDisi = adaylar.filter { !zigzagTypes.contains($0) }
+            if !zigzagDisi.isEmpty { adaylar = zigzagDisi }
+        }
 
         var weights: [Int] = []
         weights.reserveCapacity(adaylar.count)
@@ -275,9 +300,9 @@ final class ShapeDispenser {
             weights.append(weight)
         }
 
-        // Eğer tüm ağırlıklar 0 olduysa düz random fallback
+        // Eğer tüm ağırlıklar 0 olduysa kategori agirlikli fallback
         if weights.allSatisfy({ $0 == 0 }) {
-            return adaylar.randomElement() ?? (BlockShapeType.allCases.randomElement() ?? .single)
+            return weightedRandomType(from: adaylar)
         }
 
         return agirlikliRastgeleSec(adaylar, weights: weights)
@@ -297,10 +322,30 @@ final class ShapeDispenser {
 
     /// Tipin base ağırlığını üretir — frequency kontrolü
     private func agirlikTabani(for tip: BlockShapeType) -> Int {
-        if commonPool.contains(tip) { return 10 }
-        if uncommonPool.contains(tip) { return 6 }
-        if rarePool.contains(tip) { return 3 }
-        return 5
+        let kategori = categoryMap[tip] ?? .micro
+        let kategoriAgirligi = categoryWeights[kategori] ?? 1
+        if commonPool.contains(tip) { return 10 * kategoriAgirligi }
+        if uncommonPool.contains(tip) { return 6 * kategoriAgirligi }
+        if rarePool.contains(tip) { return 3 * kategoriAgirligi }
+        return 5 * kategoriAgirligi
+    }
+
+    // MARK: - Kategori Agirlikli Secim
+
+    /// Kategori agirliklarina gore rastgele sekil secer
+    private func weightedRandom(from shapes: [BlockShape]) -> BlockShape {
+        var pool: [BlockShape] = []
+        for shape in shapes {
+            let weight = categoryWeights[shape.category] ?? 1
+            for _ in 0..<weight { pool.append(shape) }
+        }
+        return pool.randomElement() ?? (shapes.randomElement() ?? BlockShape.shape(for: .single))
+    }
+
+    /// Tip listesi icin kategori agirlikli secim yapar
+    private func weightedRandomType(from types: [BlockShapeType]) -> BlockShapeType {
+        let shapes = types.map { BlockShape.shape(for: $0) }
+        return weightedRandom(from: shapes).type
     }
 
     // MARK: - Geçmiş Yönetimi
