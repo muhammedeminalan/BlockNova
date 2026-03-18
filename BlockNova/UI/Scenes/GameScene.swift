@@ -79,6 +79,9 @@ final class GameScene: SKScene, SafeAreaUpdatable {
 
         // Model ve UI kurulum sırası — bağımlılıkları net tutar
         setupManager()
+        // Shared GameManager kullanimi nedeniyle yeni sahnede stale state kalmasin
+        // Kayit varsa restoreScore zaten degerleri geri yazar
+        manager.reset()
         setupGrid()
         setupTopPanel()
         setupBottomPanel()
@@ -214,7 +217,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     // MARK: - Manager Kurulumu
 
     private func setupManager() {
-        manager   = GameManager()
+        manager   = GameManager.shared
         manager.delegate = self
         viewModel = GameViewModel(manager: manager)
         shapeDispenser = ShapeDispenser()

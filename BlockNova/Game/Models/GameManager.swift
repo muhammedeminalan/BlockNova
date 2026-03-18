@@ -50,7 +50,7 @@ final class GameManager {
     weak var delegate: GameManagerDelegate?
 
     // MARK: - Init
-    init() {
+    private init() {
         // Kayıtlı rekor varsa yükle — uygulama yeniden açılınca kaybolmasın
         highScore = CloudManager.shared.loadHighScore()
     }

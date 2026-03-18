@@ -34,6 +34,12 @@ final class GridNode: SKNode {
     /// Son highlight edilen hucreler — clearHighlight sadece bunlari gunceller (performans)
     private var highlightedPositions: [(row: Int, col: Int)] = []
 
+    /// Patlama partikül sayacı — scene.children taraması yerine kullanılır
+    private var activeExplodeParticles: Int = 0
+
+    /// FX partikül sayacı — scene.children taraması yerine kullanılır
+    private var activeSpawnParticles: Int = 0
+
     /// Olaylar icin delegate — weak: retain cycle onleme
     weak var delegate: GridDelegate?
 
@@ -420,8 +426,7 @@ final class GridNode: SKNode {
         }
 
         // Parca siniri: ayni anda max 150
-        let mevcutPartikul = scene.children.filter { $0.zPosition == 150 }.count
-        guard mevcutPartikul < 150 else {
+        guard activeExplodeParticles < 150 else {
             cell.isHidden = true
             DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
                 cell.isHidden = false
@@ -444,6 +449,7 @@ final class GridNode: SKNode {
             particle.zPosition = 150
             particle.alpha = 1.0
             scene.addChild(particle)
+            activeExplodeParticles += 1
 
             let angle = (CGFloat(i) / CGFloat(particleCount)) * 2 * .pi + CGFloat.random(in: -0.3...0.3)
             let distance = CGFloat.random(in: distanceRange)
@@ -457,8 +463,13 @@ final class GridNode: SKNode {
                 SKAction.fadeOut(withDuration: duration * 0.85)
             ])
 
+            let decrement = SKAction.run { [weak self] in
+                guard let self = self else { return }
+                self.activeExplodeParticles = max(0, self.activeExplodeParticles - 1)
+            }
             particle.run(SKAction.sequence([
                 flyOut,
+                decrement,
                 SKAction.removeFromParent()
             ]))
         }
@@ -623,11 +634,10 @@ final class GridNode: SKNode {
 
         // Sahnedeki mevcut partikül sayısını kontrol et — 120'yi geçiyorsa spawn etme
         // Düşük RAM cihazlarda kasa önlenir
-        let mevcutPartikul = targetScene.children.filter { $0.name == "partikul" }.count
-        guard mevcutPartikul < 120 else { return }
+        guard activeSpawnParticles < 120 else { return }
 
         // Sınırı aşmamak için gerçek spawn sayısını hesapla
-        let gercekCount = min(count, 120 - mevcutPartikul)
+        let gercekCount = min(count, 120 - activeSpawnParticles)
 
         for _ in 0..<gercekCount {
             let size = CGFloat.random(in: 4...8)
@@ -638,6 +648,7 @@ final class GridNode: SKNode {
             particle.zPosition = 150    // Her seyin onunde gorunsun
             particle.alpha     = 0.9
             targetScene.addChild(particle)
+            activeSpawnParticles += 1
 
             // Rastgele yon ve mesafe — her partikul farkli yonde ucar
             let angle    = CGFloat.random(in: 0...(2 * .pi))
@@ -646,12 +657,17 @@ final class GridNode: SKNode {
             let dy = sin(angle) * distance
 
             // Hareket + kuculme + solma ayni anda — 0.35sn: yeterince uzun ama kasa yapmaz
+            let decrement = SKAction.run { [weak self] in
+                guard let self = self else { return }
+                self.activeSpawnParticles = max(0, self.activeSpawnParticles - 1)
+            }
             particle.run(SKAction.sequence([
                 SKAction.group([
                     SKAction.moveBy(x: dx, y: dy, duration: 0.35),
                     SKAction.fadeOut(withDuration: 0.35),
                     SKAction.scale(to: 0.1, duration: 0.35)
                 ]),
+                decrement,
                 SKAction.removeFromParent()
             ]))
         }
