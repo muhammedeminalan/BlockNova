@@ -1,38 +1,44 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="13122.16" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="24506" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13104.12"/>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="24504"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
+        <!--View Controller-->
         <scene sceneID="EHf-IW-A2E">
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
-                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="BLOCK" textAlignment="natural" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="BLK-lb-001">
-                                <rect key="frame" x="0" y="0" width="100" height="50"/>
-                                <fontDescription key="fontDescription" name="AvenirNext-Heavy" pointSize="52"/>
-                                <color key="textColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <nil key="highlightedColor"/>
-                            </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="NOVA" textAlignment="natural" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="NVA-lb-002">
-                                <rect key="frame" x="0" y="0" width="100" height="50"/>
-                                <fontDescription key="fontDescription" name="AvenirNext-Heavy" pointSize="52"/>
-                                <color key="textColor" red="0" green="0.831" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <nil key="highlightedColor"/>
-                            </label>
+                            <stackView opaque="NO" contentMode="scaleToFill" axis="horizontal" alignment="center" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="STK-BN-001">
+                                <rect key="frame" x="23.666666666666657" y="391" width="345.66666666666669" height="71.333333333333314"/>
+                                <subviews>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="BLOCK" textAlignment="natural" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="BLK-lb-001">
+                                        <rect key="frame" x="0.0" y="0.0" width="183.66666666666666" height="71.333333333333314"/>
+                                        <fontDescription key="fontDescription" name="AvenirNext-Heavy" pointSize="52"/>
+                                        <color key="textColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="NOVA" textAlignment="natural" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="NVA-lb-002">
+                                        <rect key="frame" x="193.66666666666666" y="0.0" width="152.0" height="71.333333333333314"/>
+                                        <fontDescription key="fontDescription" name="AvenirNext-Heavy" pointSize="52"/>
+                                        <color key="textColor" red="0.0" green="0.83099999999999996" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                </subviews>
+                            </stackView>
                         </subviews>
-                        <color key="backgroundColor" red="0.039" green="0.039" blue="0.102" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
+                        <color key="backgroundColor" red="0.039" green="0.039" blue="0.10199999999999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="BLK-lb-001" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="C01-cy-blk"/>
-                            <constraint firstItem="BLK-lb-001" firstAttribute="trailing" secondItem="Ze5-6b-2t3" secondAttribute="centerX" constant="-4" id="C02-tr-blk"/>
-                            <constraint firstItem="NVA-lb-002" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="C03-cy-nva"/>
-                            <constraint firstItem="NVA-lb-002" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="centerX" constant="4" id="C04-ld-nva"/>
+                            <constraint firstItem="STK-BN-001" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="CNX-BN-001"/>
+                            <constraint firstItem="STK-BN-001" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="CNY-BN-001"/>
                         </constraints>
                     </view>
                 </viewController>

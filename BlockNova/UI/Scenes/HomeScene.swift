@@ -159,13 +159,12 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
     /// "BLOCK" sağa hizalı, "NOVA" sola hizalı — ikisi ekran ortasında buluşur.
     /// Font boyutu min(screenW, screenH) ile hesaplanır: dar veya geniş cihazda taşmaz.
     private func kurgulaLogo() {
-        // "BLOCK" — horizontalAlignmentMode .right: metnin sağ kenarı pivot noktasında
-        // Bu sayede X pozisyonu = merkez - boşluk olarak ayarlanınca sol tarafa doğru oturur
+        // "BLOCK" — horizontalAlignmentMode .left: toplam genişlik hesaplanacağı için sol pivot kullanılır
         let block = SKLabelNode(fontNamed: "AvenirNext-Heavy")
         block.text                    = "BLOCK"
         block.fontSize                = logoFontBoyutu()
         block.fontColor               = .white
-        block.horizontalAlignmentMode = .right   // Sağ kenar pivot — merkeze yasla
+        block.horizontalAlignmentMode = .left    // Sol kenar pivot — toplam genişlik ile ortalanır
         block.verticalAlignmentMode   = .baseline
         block.zPosition               = C.zUI
         block.alpha                   = 0
@@ -178,7 +177,7 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
         nova.text                    = "NOVA"
         nova.fontSize                = logoFontBoyutu()
         nova.fontColor               = UIColor(hex: "#00D4FF")
-        nova.horizontalAlignmentMode = .left     // Sol kenar pivot — merkeze yasla
+        nova.horizontalAlignmentMode = .left     // Sol kenar pivot — toplam genislik ile ortalanir
         nova.verticalAlignmentMode   = .baseline
         nova.zPosition               = C.zUI
         nova.alpha                   = 0
@@ -401,16 +400,23 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
         // --- LOGO ---
         // Güvenli alanın üst %88'i — safe area'ya göre hesaplanır, notch'tan etkilenmez
         let logoY      = safeMinY + safeH * 0.88
-        let yariBosluk = C.screenW * 0.018
+        let spacing    = C.screenW * 0.036  // Eski görsel araligi koru: 2 * yariBosluk
         let fontBoyutu = logoFontBoyutu()
 
-        if let block = blockLabel {
+        if let block = blockLabel, let nova = novaLabel {
+            // Iki label'i toplam genisligine gore ortala — kayma olmaz
             block.fontSize = fontBoyutu
-            block.position = CGPoint(x: C.screenW / 2 - yariBosluk, y: logoY)
-        }
-        if let nova = novaLabel {
             nova.fontSize  = fontBoyutu
-            nova.position  = CGPoint(x: C.screenW / 2 + yariBosluk, y: logoY)
+            block.horizontalAlignmentMode = .left
+            nova.horizontalAlignmentMode  = .left
+
+            let blockW = block.frame.width
+            let novaW  = nova.frame.width
+            let totalW = blockW + novaW + spacing
+            let startX = C.screenW / 2 - totalW / 2
+
+            block.position = CGPoint(x: startX, y: logoY)
+            nova.position  = CGPoint(x: startX + blockW + spacing, y: logoY)
         }
 
         // Tagline: logodan font boyutuyla orantılı mesafe aşağıda

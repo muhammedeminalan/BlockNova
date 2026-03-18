@@ -45,15 +45,15 @@ final class LoadingScene: SKScene {
         // Bu iPhone SE (küçük) ile Pro Max (büyük) arasında taşma yaşatmaz
         let fontBoyutu = min(w, h) * 0.12
 
-        // BLOCK: .right hizalı — sağ kenarı pivot, merkeze yaslar
+        // BLOCK: sol hizalı — toplam genislik hesaplanacak
         let blockLabel = SKLabelNode(text: "BLOCK")
         blockLabel.fontName  = "AvenirNext-Heavy"
         blockLabel.fontSize  = fontBoyutu
         blockLabel.fontColor = .white
-        blockLabel.horizontalAlignmentMode = .right
+        blockLabel.horizontalAlignmentMode = .left
         blockLabel.verticalAlignmentMode   = .baseline
 
-        // NOVA: .left hizalı — sol kenarı pivot, merkeze yaslar
+        // NOVA: sol hizalı — toplam genislik hesaplanacak
         let novaLabel = SKLabelNode(text: "NOVA")
         novaLabel.fontName  = "AvenirNext-Heavy"
         novaLabel.fontSize  = fontBoyutu
@@ -61,18 +61,23 @@ final class LoadingScene: SKScene {
         novaLabel.horizontalAlignmentMode = .left
         novaLabel.verticalAlignmentMode   = .baseline
 
-        // İki kelime arasındaki boşluğun yarısı — ortada buluşur
-        let yarimBosluk: CGFloat = w * 0.018
-        let logoY = h * 0.62  // Ekranın üst %38'inde — grid ve yükleme yazısına alan bırakır
+        // Ekranın üst %38'inde — grid ve yükleme yazısına alan bırakır
+        let logoY = h * 0.62
+        let spacing: CGFloat = w * 0.036  // Eski araligi koru: 2 * yarimBosluk
 
-        blockLabel.position = CGPoint(x: w / 2 - yarimBosluk, y: logoY)
-        novaLabel.position  = CGPoint(x: w / 2 + yarimBosluk, y: logoY)
-
-        // Staggered fade-in: önce BLOCK, 0.15sn sonra NOVA — canlılık katar
+        // Etiketleri ekle, sonra genislikleriyle ortala
         blockLabel.alpha = 0
         novaLabel.alpha  = 0
         addChild(blockLabel)
         addChild(novaLabel)
+
+        let blockW = blockLabel.frame.width
+        let novaW  = novaLabel.frame.width
+        let totalW = blockW + novaW + spacing
+        let startX = w / 2 - totalW / 2
+
+        blockLabel.position = CGPoint(x: startX, y: logoY)
+        novaLabel.position  = CGPoint(x: startX + blockW + spacing, y: logoY)
 
         blockLabel.run(SKAction.fadeIn(withDuration: 0.4))
         novaLabel.run(SKAction.sequence([
