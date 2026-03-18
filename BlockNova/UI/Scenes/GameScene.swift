@@ -536,6 +536,43 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         view?.presentScene(home, transition: SKTransition.fade(withDuration: 0.4))
     }
 
+    // MARK: - Skor Animasyonu
+
+    /// Skor artinca label ziplat — net geri bildirim
+    private func animateScoreLabel() {
+        scoreValueLabel.removeAction(forKey: "scoreBounce")
+        let bounce = SKAction.sequence([
+            SKAction.scale(to: 1.25, duration: 0.08),
+            SKAction.scale(to: 1.0, duration: 0.08)
+        ])
+        scoreValueLabel.run(bounce, withKey: "scoreBounce")
+    }
+
+    /// Ucan puan yazisi — combo geri bildirimi
+    private func showFloatingScore(_ points: Int, at position: CGPoint, color: UIColor) {
+        let label = SKLabelNode(text: "+\(points)")
+        label.fontName = "AvenirNext-Heavy"
+        label.fontSize = frame.height * 0.042
+        label.fontColor = color
+        label.position = position
+        label.zPosition = 201
+        label.alpha = 0
+        addChild(label)
+
+        label.run(SKAction.sequence([
+            SKAction.group([
+                SKAction.fadeIn(withDuration: 0.1),
+                SKAction.moveBy(x: 0, y: 10, duration: 0.1)
+            ]),
+            SKAction.wait(forDuration: 0.4),
+            SKAction.group([
+                SKAction.moveBy(x: 0, y: 50, duration: 0.4),
+                SKAction.fadeOut(withDuration: 0.4)
+            ]),
+            SKAction.removeFromParent()
+        ]))
+    }
+
     // MARK: - Etiket Fabrikası
 
     /// SKLabelNode oluşturur — extension'lar dahil tüm sahne tarafından kullanılır
@@ -585,33 +622,145 @@ extension GameScene: GridDelegate {
         }
     }
 
-    /// Çizgi temizleme uçan yazı efekti
+    /// Çizgi temizleme combo efekti — her seviye icin daha ilgi cekici animasyon
     private func showLineClearEffect(count: Int) {
-        let text:  String
-        let color: SKColor
-        let fsize: CGFloat
+        let lineCenter = CGPoint(x: C.screenW / 2, y: effectiveGridCenterY)
+        let linePoints = manager.previewPointsForLines(count)
 
         switch count {
-        case 1:  text = "LINE!";          color = .white;          fsize = C.screenH * 0.026
-        case 2:  text = "DOUBLE!";        color = C.goldColor.sk;  fsize = C.screenH * 0.032
-        default: text = "COMBO x\(count)!"; color = C.goldColor.sk; fsize = C.screenH * 0.036
+        case 1:
+            // Tek cizgi: daha canli \"LINE!\" yazisi + puan
+            let lineLabel = SKLabelNode(text: "LINE!")
+            lineLabel.fontName = "AvenirNext-Heavy"
+            lineLabel.fontSize = frame.height * 0.045
+            lineLabel.fontColor = .white
+            let lineShadow = SKLabelNode(text: "LINE!")
+            lineShadow.fontName = "AvenirNext-Heavy"
+            lineShadow.fontSize = frame.height * 0.045
+            lineShadow.fontColor = UIColor(white: 0, alpha: 0.6)
+            lineShadow.position = CGPoint(x: 2, y: -2)
+            lineLabel.addChild(lineShadow)
+            lineLabel.position = CGPoint(x: frame.midX, y: frame.midY + 35)
+            lineLabel.zPosition = 200
+            lineLabel.setScale(0.4)
+            lineLabel.alpha = 0
+            addChild(lineLabel)
+
+            lineLabel.run(SKAction.sequence([
+                SKAction.group([
+                    SKAction.scale(to: 1.15, duration: 0.12),
+                    SKAction.fadeIn(withDuration: 0.10),
+                    SKAction.rotate(byAngle: 0.08, duration: 0.12)
+                ]),
+                SKAction.scale(to: 1.0, duration: 0.08),
+                SKAction.wait(forDuration: 0.35),
+                SKAction.group([
+                    SKAction.moveBy(x: 0, y: 40, duration: 0.25),
+                    SKAction.fadeOut(withDuration: 0.25),
+                    SKAction.rotate(byAngle: -0.08, duration: 0.25)
+                ]),
+                SKAction.removeFromParent()
+            ]))
+
+            showFloatingScore(linePoints, at: lineCenter, color: .white)
+        case 2:
+            // Double combo: buyuk yazi + glow + puan
+            let label = SKLabelNode(text: "DOUBLE!")
+            label.fontName = "AvenirNext-Heavy"
+            label.fontSize = frame.height * 0.065
+            label.fontColor = UIColor(red: 1, green: 0.8, blue: 0, alpha: 1)
+            let glow = SKLabelNode(text: "DOUBLE!")
+            glow.fontName = "AvenirNext-Heavy"
+            glow.fontSize = frame.height * 0.065
+            glow.fontColor = UIColor(red: 1, green: 0.45, blue: 0, alpha: 0.7)
+            glow.position = CGPoint(x: 3, y: -3)
+            label.addChild(glow)
+            label.position = CGPoint(x: frame.midX, y: frame.midY + 55)
+            label.zPosition = 200
+            label.setScale(0.25)
+            label.alpha = 0
+            addChild(label)
+
+            label.run(SKAction.sequence([
+                SKAction.group([
+                    SKAction.scale(to: 1.35, duration: 0.12),
+                    SKAction.fadeIn(withDuration: 0.10),
+                    SKAction.rotate(byAngle: 0.1, duration: 0.12)
+                ]),
+                SKAction.scale(to: 1.05, duration: 0.08),
+                SKAction.wait(forDuration: 0.45),
+                SKAction.group([
+                    SKAction.moveBy(x: 0, y: 70, duration: 0.3),
+                    SKAction.fadeOut(withDuration: 0.3),
+                    SKAction.rotate(byAngle: -0.1, duration: 0.3)
+                ]),
+                SKAction.removeFromParent()
+            ]))
+
+            showFloatingScore(linePoints,
+                              at: CGPoint(x: frame.midX, y: frame.midY - 30),
+                              color: UIColor(red: 1, green: 0.8, blue: 0, alpha: 1))
+        default:
+            // Mega combo: beyaz flash + sarsinti + buyuk yazi + puan
+            let whiteOverlay = SKSpriteNode(color: .white,
+                                            size: CGSize(width: frame.width, height: frame.height))
+            whiteOverlay.position = CGPoint(x: frame.midX, y: frame.midY)
+            whiteOverlay.zPosition = 250
+            whiteOverlay.alpha = 0
+            addChild(whiteOverlay)
+            whiteOverlay.run(SKAction.sequence([
+                SKAction.fadeAlpha(to: 0.6, duration: 0.05),
+                SKAction.fadeOut(withDuration: 0.2),
+                SKAction.removeFromParent()
+            ]))
+
+            let shake = SKAction.sequence([
+                SKAction.moveBy(x: -10, y: 5, duration: 0.04),
+                SKAction.moveBy(x: 20, y: -10, duration: 0.04),
+                SKAction.moveBy(x: -20, y: 5, duration: 0.04),
+                SKAction.moveBy(x: 10, y: 0, duration: 0.04)
+            ])
+            scene?.run(shake)
+
+            let megaLabel = SKLabelNode(text: "MEGA COMBO!")
+            megaLabel.fontName = "AvenirNext-Heavy"
+            megaLabel.fontSize = frame.height * 0.08
+            megaLabel.fontColor = UIColor(red: 0, green: 0.9, blue: 1, alpha: 1)
+            let megaShadow = SKLabelNode(text: "MEGA COMBO!")
+            megaShadow.fontName = "AvenirNext-Heavy"
+            megaShadow.fontSize = frame.height * 0.08
+            megaShadow.fontColor = UIColor(red: 0, green: 0.3, blue: 0.5, alpha: 1)
+            megaShadow.position = CGPoint(x: 4, y: -4)
+            megaLabel.addChild(megaShadow)
+            megaLabel.position = CGPoint(x: frame.midX, y: frame.midY + 65)
+            megaLabel.zPosition = 200
+            megaLabel.setScale(0.08)
+            megaLabel.alpha = 0
+            addChild(megaLabel)
+
+            megaLabel.run(SKAction.sequence([
+                SKAction.group([
+                    SKAction.scale(to: 1.6, duration: 0.15),
+                    SKAction.fadeIn(withDuration: 0.10),
+                    SKAction.rotate(byAngle: 0.12, duration: 0.15)
+                ]),
+                SKAction.scale(to: 1.25, duration: 0.08),
+                SKAction.wait(forDuration: 0.5),
+                SKAction.group([
+                    SKAction.moveBy(x: 0, y: 90, duration: 0.4),
+                    SKAction.fadeOut(withDuration: 0.4),
+                    SKAction.scale(to: 0.75, duration: 0.4),
+                    SKAction.rotate(byAngle: -0.12, duration: 0.4)
+                ]),
+                SKAction.removeFromParent()
+            ]))
+
+            showFloatingScore(linePoints,
+                              at: CGPoint(x: frame.midX, y: frame.midY - 50),
+                              color: UIColor(red: 0, green: 0.9, blue: 1, alpha: 1))
+
+            HapticManager.notification(.success)
         }
-
-        let lbl = makeLabel(text, font: C.fontBold, size: fsize, color: color)
-        lbl.position  = CGPoint(x: C.screenW / 2,
-                                y: effectiveGridCenterY + C.gridTotalHeight / 2 + C.screenH * 0.02)
-        lbl.zPosition = C.zUI + 2
-        lbl.alpha     = 0
-        addChild(lbl)
-
-        lbl.run(SKAction.sequence([
-            SKAction.group([
-                SKAction.fadeIn(withDuration: 0.15),
-                SKAction.moveBy(x: 0, y: C.screenH * 0.07, duration: 0.65)
-            ]),
-            SKAction.fadeOut(withDuration: 0.25),
-            SKAction.removeFromParent()
-        ]))
     }
 }
 
@@ -623,12 +772,8 @@ extension GameScene: GameManagerDelegate {
         scoreValueLabel.text     = "\(score)"
         highScoreValueLabel.text = "\(highScore)"
 
-        // Skor micro-bounce — güncelleme fark edilsin
-        scoreValueLabel.removeAction(forKey: "scoreBounce")
-        scoreValueLabel.run(SKAction.sequence([
-            SKAction.scale(to: 1.28, duration: 0.08),
-            SKAction.scale(to: 1.00, duration: 0.08)
-        ]), withKey: "scoreBounce")
+        // Skor artinca label ziplasin — daha net geri bildirim
+        animateScoreLabel()
 
         if isNewRecord {
             // Yeni rekor kırılınca achievement sesi çal — her skor artışında değil, sadece rekorда

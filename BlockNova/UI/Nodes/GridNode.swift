@@ -487,21 +487,37 @@ final class GridNode: SKNode {
         default:
             distanceRange = 60...120
             duration = 0.32
-            let shake = SKAction.sequence([
-                SKAction.moveBy(x: -6, y: 0, duration: 0.03),
-                SKAction.moveBy(x: 12, y: 0, duration: 0.06),
-                SKAction.moveBy(x: -6, y: 0, duration: 0.03)
-            ])
-            scene?.run(shake)
         }
 
         for (index, cell) in cells.enumerated() {
             let delay = Double(index) * 0.03
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                self?.explodeCell(cell, distanceRange: distanceRange, duration: duration) {
-                    completed += 1
-                    if completed >= total {
-                        completion()
+                guard let self = self else { return }
+
+                if lineCount == 2 {
+                    // Double combo icin kisa sari-turuncu flash
+                    let originalColor = cell.color
+                    let flash = SKAction.sequence([
+                        SKAction.run { cell.color = UIColor(red: 1, green: 0.8, blue: 0, alpha: 1).sk },
+                        SKAction.wait(forDuration: 0.06),
+                        SKAction.run { cell.color = UIColor(red: 1, green: 0.5, blue: 0, alpha: 1).sk },
+                        SKAction.wait(forDuration: 0.10),
+                        SKAction.run { cell.color = originalColor }
+                    ])
+                    cell.run(flash) { [weak self] in
+                        self?.explodeCell(cell, distanceRange: distanceRange, duration: duration) {
+                            completed += 1
+                            if completed >= total {
+                                completion()
+                            }
+                        }
+                    }
+                } else {
+                    self.explodeCell(cell, distanceRange: distanceRange, duration: duration) {
+                        completed += 1
+                        if completed >= total {
+                            completion()
+                        }
                     }
                 }
             }

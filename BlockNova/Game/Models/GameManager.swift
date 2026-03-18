@@ -63,26 +63,20 @@ final class GameManager {
         addPoints(points)
     }
 
-    /// Hücre yerleştirme skoru: her hücre daha tatmin edici puan verir
-    /// Oyun ekonomisini şişirmeden ödül hissini artırır
+    /// Hücre yerleştirme skoru: parça büyüklüğüne göre artan puan
+    /// Küçük parça az, büyük parça çok puan verir — tatmin hissi artar
     func addScore(forCells count: Int) {
-        addPoints(count * C.scoreCellBase)
+        addPoints(pointsForPlacement(cellCount: count))
     }
 
-    /// Çizgi temizleme skoru — multi-clear ödülü daha belirgin
-    /// 1 çizgi: base, 2 çizgi: base + bonus, 3+ çizgi: base + artan bonus
+    /// Çizgi temizleme skoru — combo arttıkça katlanır
     func addScore(forLines count: Int) {
-        let base = count * C.scoreLineBase
-        let bonus: Int
-        switch count {
-        case 1:
-            bonus = 0
-        case 2:
-            bonus = C.scoreLineBonus2
-        default:
-            bonus = C.scoreLineBonus3Plus + (count - 3) * C.scoreLineBonusPerExtra
-        }
-        addPoints(base + bonus)
+        addPoints(pointsForLines(count))
+    }
+
+    /// Çizgi puanını UI'da göstermek için dışarıdan okunabilir
+    func previewPointsForLines(_ count: Int) -> Int {
+        return pointsForLines(count)
     }
 
     /// Oyunu bitirir — delegate'i bilgilendirir
@@ -178,6 +172,26 @@ final class GameManager {
     }
 
     // MARK: - Özel Yardımcı
+
+    /// Yerleştirme puanını parça boyutuna göre hesaplar
+    private func pointsForPlacement(cellCount: Int) -> Int {
+        switch cellCount {
+        case 1...2:  return cellCount * 5
+        case 3...4:  return cellCount * 8
+        case 5...9:  return cellCount * 12
+        default:     return cellCount * 15
+        }
+    }
+
+    /// Çizgi temizleme puanını combo seviyesine göre hesaplar
+    private func pointsForLines(_ count: Int) -> Int {
+        switch count {
+        case 1: return 100
+        case 2: return 300
+        case 3: return 600
+        default: return 1000 + (count - 4) * 200
+        }
+    }
 
     /// Skoru artırır, rekor kontrolü yapar, delegate'i bilgilendirir.
     /// Merkezi tutuluyor çünkü rekor kontrolü her iki çağrıda da aynı.
