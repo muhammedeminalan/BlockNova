@@ -572,10 +572,10 @@ final class HomeScene: SKScene, SafeAreaUpdatable {
         // AYARLAR butonuna basıldı — HomeScene yeniden olusmaz, geri donuste ayni instance kullanilir
         if node.name == "ayarlarBtn" || node.parent?.name == "ayarlarBtn" {
             HapticManager.impact(.light)
-            let settings = SettingsScene(size: size)
-            settings.scaleMode = scaleMode
-            settings.homeScene = self
-            view?.presentScene(settings, transition: SKTransition.push(with: .left, duration: 0.3))
+            guard let rootVC = view?.window?.rootViewController else { return }
+            guard rootVC.presentedViewController == nil else { return }
+            let settings = SettingsHostingController()
+            rootVC.present(settings, animated: true)
         }
     }
 

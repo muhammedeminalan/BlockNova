@@ -232,9 +232,10 @@ final class LoadingScene: SKScene {
         guard minimumTimePassed else { return }
 
         // Fade geçiş: ani kesim yerine yumuşak — gözü yormaz
-        let transition = SKTransition.fade(withDuration: 0.5)
-        let homeScene  = HomeScene(size: size)
-        homeScene.scaleMode = scaleMode
-        view?.presentScene(homeScene, transition: transition)
+        guard let skView = view else { return }
+        guard let rootVC = skView.window?.rootViewController else { return }
+        guard rootVC.presentedViewController == nil else { return }
+        let home = HomeHostingController(skView: skView)
+        rootVC.present(home, animated: true)
     }
 }
