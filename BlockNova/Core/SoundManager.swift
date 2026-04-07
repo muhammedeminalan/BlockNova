@@ -9,9 +9,6 @@ import QuartzCore
 final class SoundManager {
     static let shared = SoundManager()
 
-    // Ses açık/kapalı — ileride ayarlar eklenirse diye
-    var isSoundEnabled = true
-
     // Ses spam'ini engellemek için son çalma zamanları
     private var lastPlayTime: [String: TimeInterval] = [:]
 

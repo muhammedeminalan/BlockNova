@@ -1,7 +1,7 @@
 // 📁 Scenes/GameScene.swift
-// Oyunun ana sahnesi. Bileşenleri koordine eder; sunum mantığı extension'lara bölünmüştür:
-//   GameScene+Layout.swift  — safe area tabanlı yerleşim
-//   GameScene+Overlay.swift — oyun sonu overlay inşası
+// Oyunun ana sahnesi. Bileşenleri koordine eder; yerleşim mantığı extension'da tutulur:
+//   GameScene+Layout.swift — safe area tabanlı yerleşim
+// Oyun sonu overlay sunumu SwiftUI katmanında (GameContainerView) yönetilir.
 //
 // SÜRÜKLEME TASARIMI:
 // - touchesMoved'da SKAction KULLANILMAZ: position doğrudan atanır — akıcılık için
@@ -52,11 +52,6 @@ final class GameScene: SKScene, SafeAreaUpdatable {
 
     var bottomPanelNode: SKSpriteNode?
     var bottomPanelSeparator: SKShapeNode?
-
-    // MARK: - Oyun Sonu Overlay
-
-    /// Oyun sonu overlay — gösterilince eklenir, yeniden başlatınca kaldırılır
-    var overlayNode: SKNode?
 
     /// SwiftUI router'a ana menüye dönüş bildirmek için köprü kapanışı
     var onReturnToHome: (() -> Void)?
@@ -350,8 +345,6 @@ final class GameScene: SKScene, SafeAreaUpdatable {
               let touch = touches.first else { return }
         // Aktif sürükleme varken yeni piece seçme — ownership sabit kalsın
         guard draggedPiece == nil else { return }
-        // Aktif sürükleme varken yeni piece seçme — ownership sabit kalsın
-        guard draggedPiece == nil else { return }
 
         let location = touch.location(in: self)
         let selectedSlot = previewSlots.first { slot in
@@ -520,8 +513,6 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         // Yeni oyun başlayınca kaydı sil — eski durum geçersiz
         GameSaveManager.shared.sil()
 
-        overlayNode?.removeFromParent()
-        overlayNode = nil
         trayPieces.forEach { $0?.removeFromParent() }
         trayPieces   = [nil, nil, nil]
         draggedPiece = nil
@@ -808,7 +799,7 @@ extension GameScene: GameManagerDelegate {
                 let presentation = GameOverPresentation(
                     score: score,
                     highScore: highScore,
-                    isNewRecord: score >= highScore
+                    isNewRecord: self.manager.newRecordAchieved
                 )
                 self.onGameOverChanged?(presentation)
             }

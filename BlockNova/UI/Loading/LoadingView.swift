@@ -4,6 +4,8 @@ struct LoadingView: View {
     @StateObject private var viewModel: LoadingViewModel
     @State private var dotCount = 0
     @State private var animationStep = 0
+    @State private var dotAnimationTask: Task<Void, Never>?
+    @State private var gridAnimationTask: Task<Void, Never>?
 
     private let autoStart: Bool
 
@@ -69,6 +71,9 @@ struct LoadingView: View {
             startTextAnimation()
             startGridAnimation()
         }
+        .onDisappear {
+            stopAnimations()
+        }
     }
 
     private var loadingBlockGrid: some View {
@@ -93,15 +98,30 @@ struct LoadingView: View {
     }
 
     private func startTextAnimation() {
-        Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { _ in
-            dotCount = (dotCount + 1) % 4
+        guard dotAnimationTask == nil else { return }
+        dotAnimationTask = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 400_000_000)
+                dotCount = (dotCount + 1) % 4
+            }
         }
     }
 
     private func startGridAnimation() {
-        Timer.scheduledTimer(withTimeInterval: 0.16, repeats: true) { _ in
-            animationStep = (animationStep + 1) % 9
+        guard gridAnimationTask == nil else { return }
+        gridAnimationTask = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 160_000_000)
+                animationStep = (animationStep + 1) % 9
+            }
         }
+    }
+
+    private func stopAnimations() {
+        dotAnimationTask?.cancel()
+        dotAnimationTask = nil
+        gridAnimationTask?.cancel()
+        gridAnimationTask = nil
     }
 }
 
