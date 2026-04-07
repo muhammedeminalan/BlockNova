@@ -8,6 +8,7 @@ struct GameContainerView: View {
 
     @StateObject private var bridge = GameContainerBridge()
     @State private var gameOverPresentation: GameOverPresentation?
+    @State private var isExitConfirmPresented = false
 
     var body: some View {
         ZStack {
@@ -15,6 +16,11 @@ struct GameContainerView: View {
                 bridge: bridge,
                 onReturnToHome: onReturnToHome,
                 onGameOverChanged: { presentation in
+                    // Oyun sonu geldiginde cikis onayini kapatip oyunu devam ettir.
+                    if presentation != nil {
+                        isExitConfirmPresented = false
+                        bridge.setPaused(false)
+                    }
                     withAnimation(.easeInOut(duration: 0.2)) {
                         gameOverPresentation = presentation
                     }
@@ -22,11 +28,25 @@ struct GameContainerView: View {
             )
             .ignoresSafeArea()
 
+            if gameOverPresentation == nil {
+                InGameHUDView(
+                    onHomeTap: {
+                        HapticManager.impact(.light)
+                        bridge.setPaused(true)
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isExitConfirmPresented = true
+                        }
+                    }
+                )
+                .zIndex(1)
+            }
+
             if let presentation = gameOverPresentation {
                 GameOverOverlayView(
                     presentation: presentation,
                     onReplay: {
                         HapticManager.impact(.medium)
+                        bridge.setPaused(false)
                         withAnimation(.easeInOut(duration: 0.2)) {
                             gameOverPresentation = nil
                         }
@@ -34,13 +54,34 @@ struct GameContainerView: View {
                     },
                     onHome: {
                         HapticManager.impact(.light)
+                        bridge.setPaused(false)
                         withAnimation(.easeInOut(duration: 0.2)) {
                             gameOverPresentation = nil
                         }
                         bridge.goHome()
                     }
                 )
-                .zIndex(1)
+                .zIndex(2)
+            }
+
+            if isExitConfirmPresented && gameOverPresentation == nil {
+                ExitGameConfirmView(
+                    onCancel: {
+                        bridge.setPaused(false)
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isExitConfirmPresented = false
+                        }
+                    },
+                    onConfirm: {
+                        bridge.prepareForHomeExit()
+                        bridge.setPaused(false)
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isExitConfirmPresented = false
+                        }
+                        bridge.goHome()
+                    }
+                )
+                .zIndex(3)
             }
         }
     }
@@ -50,6 +91,8 @@ struct GameContainerView: View {
 final class GameContainerBridge: ObservableObject {
     var restartAction: () -> Void = {}
     var homeAction: () -> Void = {}
+    var prepareExitAction: () -> Void = {}
+    var setPausedAction: (Bool) -> Void = { _ in }
 
     func restartGame() {
         restartAction()
@@ -57,6 +100,14 @@ final class GameContainerBridge: ObservableObject {
 
     func goHome() {
         homeAction()
+    }
+
+    func prepareForHomeExit() {
+        prepareExitAction()
+    }
+
+    func setPaused(_ paused: Bool) {
+        setPausedAction(paused)
     }
 }
 
@@ -149,6 +200,15 @@ final class GameContainerViewController: UIViewController {
 
         bridge?.homeAction = { [weak self] in
             self?.gameScene?.goToHome()
+        }
+
+        bridge?.prepareExitAction = { [weak self] in
+            self?.gameScene?.prepareForExitToHome()
+        }
+
+        bridge?.setPausedAction = { [weak self] paused in
+            guard let skView = self?.view as? SKView else { return }
+            skView.isPaused = paused
         }
     }
 

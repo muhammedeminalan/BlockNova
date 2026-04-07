@@ -534,6 +534,12 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         onReturnToHome?()
     }
 
+    /// SwiftUI katmanindan "Ana Menü" cikisi isterken cagirilir.
+    /// Gameplay davranisini degistirmez; sadece cikis oncesi state'i guvenle kaydeder.
+    func prepareForExitToHome() {
+        oyunuKaydet()
+    }
+
     // MARK: - Skor Animasyonu
 
     /// Skor artinca label ziplat — net geri bildirim
