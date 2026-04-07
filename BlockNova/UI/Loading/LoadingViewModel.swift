@@ -9,7 +9,8 @@ final class LoadingViewModel: ObservableObject {
     @Published private(set) var statusText = "Yukleniyor"
     @Published private(set) var infoText: String?
 
-    private let minimumLoadDuration: TimeInterval = 1.5
+    private let minimumLoadDuration: TimeInterval = 2.2
+    private let transitionDelay: TimeInterval = 0.45
     private var hasStarted = false
     private let presenterProvider: () -> UIViewController?
     private let onFinish: () -> Void
@@ -37,6 +38,9 @@ final class LoadingViewModel: ObservableObject {
             if remaining > 0 {
                 try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
             }
+
+            statusText = "Hazirlaniyor"
+            try? await Task.sleep(nanoseconds: UInt64(transitionDelay * 1_000_000_000))
 
             onFinish()
         }
