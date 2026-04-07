@@ -18,9 +18,7 @@
 - [ ] Game Over shows SwiftUI overlay (not SpriteKit legacy overlay).
 - [ ] `Replay` restarts game in place.
 - [ ] `Home` returns to SwiftUI Home screen.
-- [ ] In-game top-left `Ana Menu` button opens exit confirmation modal.
-- [ ] Exit modal `Iptal` resumes game without state loss.
-- [ ] Exit modal `Kaydet ve Cik` returns Home and restores from save on next game open.
+- [ ] In-game screen has no SwiftUI HUD overlap on gameplay area.
 
 ## Settings
 - [ ] Sound toggle persists across app relaunch.

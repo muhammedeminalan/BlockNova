@@ -58,7 +58,6 @@ struct RootView: View {
                 router.showHome()
             })
             .id(router.gameSessionID)
-            .ignoresSafeArea()
         }
     }
 }

@@ -54,16 +54,30 @@ final class LoadingViewModel: ObservableObject {
             var resumed = false
 
             GKLocalPlayer.local.authenticateHandler = { [weak self] viewController, error in
-                if let viewController,
-                   let presenter = self?.presenterProvider(),
-                   presenter.presentedViewController == nil {
-                    presenter.present(viewController, animated: true)
-                }
-
                 if error != nil {
                     self?.infoText = "Game Center su an baglanamiyor, oyun devam ediyor"
+                    guard !resumed else { return }
+                    resumed = true
+                    continuation.resume()
+                    return
                 }
 
+                if let viewController {
+                    // Auth UI gosterilebiliyorsa akisi burada kes; bitince handler tekrar cagrilir.
+                    if let presenter = self?.presenterProvider(),
+                       presenter.presentedViewController == nil {
+                        presenter.present(viewController, animated: true)
+                        return
+                    }
+                    // Presenter yoksa bekleyip kilitlenmek yerine oyuna devam et.
+                    self?.infoText = "Game Center su an baglanamiyor, oyun devam ediyor"
+                    guard !resumed else { return }
+                    resumed = true
+                    continuation.resume()
+                    return
+                }
+
+                // UI gosterilmeyecek noktada auth sonucu netlesmistir (basarili/iptal).
                 guard !resumed else { return }
                 resumed = true
                 continuation.resume()

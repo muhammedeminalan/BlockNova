@@ -151,9 +151,9 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         // Manager'ı kayıtlı skorla senkronize et
         manager.restoreScore(kayit.score, highScore: kayit.highScore)
 
-        // Skor etiketlerini hemen güncelle
-        scoreValueLabel?.text     = "\(kayit.score)"
-        highScoreValueLabel?.text = "\(kayit.highScore)"
+        // Etiketler manager'daki normalize state'den gelsin; kayittaki stale degeri ezme.
+        scoreValueLabel?.text     = "\(manager.score)"
+        highScoreValueLabel?.text = "\(manager.highScore)"
 
         // Grid hücrelerini renkleriyle doldur — sınır kontrolü: bozuk kayıt için güvenli
         // UIColor(hex:) optional döndürmez, nil kontrolü hex string üzerinden yapılır
@@ -305,9 +305,27 @@ final class GameScene: SKScene, SafeAreaUpdatable {
 
     // MARK: - Parça Dağıtma
 
+    /// Tepsi state'iyle eşleşmeyen eski PieceNode'ları temizler.
+    /// Neden: Bazı cihazlarda animation completion kaçarsa eski node sahnede kalıp
+    /// yeni gelen parçalarla üst üste binebiliyor.
+    private func temizleYetimTepsiParcalari() {
+        let aktifKimlikler = Set(trayPieces.compactMap { $0 }.map { ObjectIdentifier($0) })
+
+        let sahnedekiParcalar = children.compactMap { $0 as? PieceNode }
+        for parca in sahnedekiParcalar {
+            let kimlik = ObjectIdentifier(parca)
+            guard !aktifKimlikler.contains(kimlik) else { continue }
+            parca.removeAllActions()
+            parca.removeFromParent()
+        }
+    }
+
     /// Alt tepsiye ShapeDispenser'dan 3 yeni parça yerleştirir.
     /// Grid'in güncel durumu iletilir — akıllı üretim için grid analizi burada başlar.
     func dealNewPieces() {
+        // Yeni tur dağıtımından önce sahnede kalan yetim parça varsa temizle.
+        temizleYetimTepsiParcalari()
+
         // Grid durumunu ilet: ShapeDispenser neredeyse dolu satır/sütun olduğunu bilsin
         let shapes   = shapeDispenser.ucunu(grid: gridNode.cellColors)
 
@@ -345,6 +363,9 @@ final class GameScene: SKScene, SafeAreaUpdatable {
               let touch = touches.first else { return }
         // Aktif sürükleme varken yeni piece seçme — ownership sabit kalsın
         guard draggedPiece == nil else { return }
+
+        // Kullanıcı yeni sürükleme başlatırken sahnede kalan yetim parça varsa temizle.
+        temizleYetimTepsiParcalari()
 
         let location = touch.location(in: self)
         let selectedSlot = previewSlots.first { slot in
