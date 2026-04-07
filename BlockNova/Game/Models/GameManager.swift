@@ -221,7 +221,7 @@ final class GameManager {
         CloudManager.shared.saveHighScore(score)
         // UI'i guncelle — NotificationCenter ile bildir
         NotificationCenter.default.post(
-            name: Notification.Name("highScoreUpdated"),
+            name: .highScoreUpdated,
             object: nil,
             userInfo: ["score": score]
         )

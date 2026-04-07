@@ -67,7 +67,7 @@ final class CloudManager {
             UserDefaults.standard.set(newScore, forKey: highScoreKey)
             // UI'i guncelle — NotificationCenter ile bildir
             NotificationCenter.default.post(
-                name: Notification.Name("highScoreUpdated"),
+                name: .highScoreUpdated,
                 object: nil,
                 userInfo: ["score": newScore]
             )

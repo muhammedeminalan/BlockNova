@@ -30,28 +30,48 @@ final class GameViewModel {
     // MARK: - Sunum Değerleri
 
     /// Ekranda gösterilecek skor metni
-    var skorMetni: String { "\(manager.score)" }
+    var scoreText: String { "\(manager.score)" }
 
     /// Ekranda gösterilecek rekor metni
-    var rekorMetni: String { "\(manager.highScore)" }
+    var highScoreText: String { "\(manager.highScore)" }
 
     /// "EN YÜKSEK: 1234" formatında tek satır rekor — overlay'de tek satır bilgi için
-    var rekorSatiri: String { "EN YÜKSEK: \(manager.highScore)" }
+    var highScoreLineText: String { "EN YÜKSEK: \(manager.highScore)" }
 
     /// Oyun oynuyor mu?
-    var oynuyor: Bool { manager.state == .playing }
+    var isPlaying: Bool { manager.state == .playing }
 
     /// Oyun bitti mi?
-    var oyunBitti: Bool { manager.state == .gameOver }
+    var isGameOver: Bool { manager.state == .gameOver }
 
     // MARK: - Skor Kartı (Overlay)
 
     /// Oyun sonu kartında gösterilecek skor + rekor değerleri
-    var oyunSonuBilgisi: (skor: String, rekor: String) {
-        (skor: "\(manager.score)", rekor: rekorSatiri)
+    var gameOverSummary: (score: String, highScore: String) {
+        (score: "\(manager.score)", highScore: highScoreLineText)
     }
 
     /// Bu oyun oturumunda yeni rekor kırıldı mı?
     /// Overlay'de "YENİ REKOR" badge'ini göstermek için kullanılır.
-    var oyunSonuYeniRekorMu: Bool { manager.newRecordAchieved }
+    var didReachNewRecordThisRun: Bool { manager.newRecordAchieved }
+
+    // MARK: - Geriye Donuk API
+
+    /// Neden var: Eski adlar korunarak kademeli naming geçişini güvenli yapmak için.
+    var skorMetni: String { scoreText }
+    /// Neden var: Eski adlar korunarak kademeli naming geçişini güvenli yapmak için.
+    var rekorMetni: String { highScoreText }
+    /// Neden var: Eski adlar korunarak kademeli naming geçişini güvenli yapmak için.
+    var rekorSatiri: String { highScoreLineText }
+    /// Neden var: Eski adlar korunarak kademeli naming geçişini güvenli yapmak için.
+    var oynuyor: Bool { isPlaying }
+    /// Neden var: Eski adlar korunarak kademeli naming geçişini güvenli yapmak için.
+    var oyunBitti: Bool { isGameOver }
+    /// Neden var: Eski adlar korunarak kademeli naming geçişini güvenli yapmak için.
+    var oyunSonuBilgisi: (skor: String, rekor: String) {
+        let summary = gameOverSummary
+        return (skor: summary.score, rekor: summary.highScore)
+    }
+    /// Neden var: Eski adlar korunarak kademeli naming geçişini güvenli yapmak için.
+    var oyunSonuYeniRekorMu: Bool { didReachNewRecordThisRun }
 }

@@ -43,24 +43,19 @@ struct LoadingView: View {
                         .foregroundStyle(Color(red: 0, green: 0.831, blue: 1))
                 }
 
-                loadingBlockGrid
+                LoadingBlockGridView(
+                    animationStep: animationStep,
+                    gridColors: gridColors
+                )
                     .padding(.top, 8)
 
                 Spacer()
 
-                VStack(spacing: 8) {
-                    Text("\(viewModel.statusText)\(String(repeating: ".", count: dotCount))")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.58))
-
-                    if let infoText = viewModel.infoText {
-                        Text(infoText)
-                            .font(.system(size: 12, weight: .regular))
-                            .foregroundStyle(.white.opacity(0.52))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 28)
-                    }
-                }
+                LoadingStatusSectionView(
+                    statusText: viewModel.statusText,
+                    dotCount: dotCount,
+                    infoText: viewModel.infoText
+                )
                 .padding(.bottom, 46)
             }
         }
@@ -73,27 +68,6 @@ struct LoadingView: View {
         }
         .onDisappear {
             stopAnimations()
-        }
-    }
-
-    private var loadingBlockGrid: some View {
-        let columns = Array(repeating: GridItem(.fixed(24), spacing: 8), count: 3)
-
-        return LazyVGrid(columns: columns, spacing: 8) {
-            ForEach(0..<9, id: \.self) { index in
-                let isActive = (animationStep + index) % 9 < 3
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(isActive ? gridColors[index] : Color.white.opacity(0.12))
-                    .frame(width: 24, height: 24)
-                    .scaleEffect(isActive ? 1.12 : 0.95)
-                    .shadow(
-                        color: isActive ? gridColors[index].opacity(0.45) : .clear,
-                        radius: isActive ? 8 : 0,
-                        x: 0,
-                        y: 3
-                    )
-                    .animation(.easeInOut(duration: 0.28), value: animationStep)
-            }
         }
     }
 

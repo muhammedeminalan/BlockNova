@@ -8,7 +8,7 @@ final class HomeViewModel: ObservableObject {
 
     init() {
         highScore = CloudManager.shared.loadHighScore()
-        NotificationCenter.default.publisher(for: Notification.Name("highScoreUpdated"))
+        NotificationCenter.default.publisher(for: .highScoreUpdated)
             .compactMap { $0.userInfo?["score"] as? Int }
             .receive(on: RunLoop.main)
             .sink { [weak self] score in

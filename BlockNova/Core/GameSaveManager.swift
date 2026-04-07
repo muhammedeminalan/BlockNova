@@ -35,16 +35,16 @@ final class GameSaveManager {
     private init() {}
 
     /// UserDefaults anahtarı — diğer anahtarlarla çakışmasın
-    private let kayitAnahtari = "BlockNova_SavedGameState"
+    private let savedStateKey = "BlockNova_SavedGameState"
 
     // MARK: - Kaydetme
 
     /// Oyun durumunu JSON'a dönüştürüp UserDefaults'a yazar.
     /// Hata olursa sessizce geçer — kayıt başarısızlığı oyunu çökertmemeli.
-    func kaydet(_ durum: SavedGameState) {
+    func save(_ state: SavedGameState) {
         do {
-            let veri = try JSONEncoder().encode(durum)
-            UserDefaults.standard.set(veri, forKey: kayitAnahtari)
+            let data = try JSONEncoder().encode(state)
+            UserDefaults.standard.set(data, forKey: savedStateKey)
         } catch {
             // Encode hatası nadiren olur ama crash önlemek için yakalanır
             print("Oyun kaydedilemedi: \(error.localizedDescription)")
@@ -55,16 +55,16 @@ final class GameSaveManager {
 
     /// UserDefaults'tan JSON'u okur ve decode eder.
     /// Veri yoksa veya hatalıysa nil döner — çağıran taraf kontrol eder.
-    func yukle() -> SavedGameState? {
-        guard let veri = UserDefaults.standard.data(forKey: kayitAnahtari) else {
+    func load() -> SavedGameState? {
+        guard let data = UserDefaults.standard.data(forKey: savedStateKey) else {
             return nil
         }
         do {
-            return try JSONDecoder().decode(SavedGameState.self, from: veri)
+            return try JSONDecoder().decode(SavedGameState.self, from: data)
         } catch {
             // Bozuk veri: sil ve nil dön — eski format uyumsuzluğu için güvenli temizlik
             print("Kayıt yüklenemedi (bozuk veri temizlendi): \(error.localizedDescription)")
-            sil()
+            deleteSavedGame()
             return nil
         }
     }
@@ -73,8 +73,25 @@ final class GameSaveManager {
 
     /// Kaydı UserDefaults'tan tamamen kaldırır.
     /// Game Over, yeni oyun başlatma veya bozuk veri durumlarında çağrılır.
+    func deleteSavedGame() {
+        UserDefaults.standard.removeObject(forKey: savedStateKey)
+    }
+
+    // MARK: - Geriye Donuk API
+
+    /// Neden var: Eski çağrı noktaları kırılmadan kademeli isim geçişi yapmak için.
+    func kaydet(_ durum: SavedGameState) {
+        save(durum)
+    }
+
+    /// Neden var: Eski çağrı noktaları kırılmadan kademeli isim geçişi yapmak için.
+    func yukle() -> SavedGameState? {
+        load()
+    }
+
+    /// Neden var: Eski çağrı noktaları kırılmadan kademeli isim geçişi yapmak için.
     func sil() {
-        UserDefaults.standard.removeObject(forKey: kayitAnahtari)
+        deleteSavedGame()
     }
 }
 

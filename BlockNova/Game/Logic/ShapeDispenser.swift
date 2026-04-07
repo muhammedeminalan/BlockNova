@@ -136,7 +136,7 @@ final class ShapeDispenser {
 
     /// Akıllı 3'lü set döndürür. Grid analizi için mevcut cellColors iletilir.
     /// grid: GridNode.cellColors — nil=boş, UIColor=dolu
-    func ucunu(grid: [[UIColor?]]? = nil) -> [BlockShape] {
+    func nextSet(for grid: [[UIColor?]]? = nil) -> [BlockShape] {
         // Grid varsa tıkanma önleme ile üret, yoksa basit üretim yap
         if let grid = grid {
             return guvenliUret(grid: grid)
@@ -146,8 +146,18 @@ final class ShapeDispenser {
     }
 
     /// Yeni oyun başladığında geçmiş temizlenir — taze başlangıç sağlanır
-    func sifirla() {
+    func resetHistory() {
         recentShapes.removeAll()
+    }
+
+    /// Neden var: Eski çağrı noktaları kırılmadan kademeli isim geçişi için.
+    func ucunu(grid: [[UIColor?]]? = nil) -> [BlockShape] {
+        nextSet(for: grid)
+    }
+
+    /// Neden var: Eski çağrı noktaları kırılmadan kademeli isim geçişi için.
+    func sifirla() {
+        resetHistory()
     }
 
     // MARK: - Tıkanma Önleyici Üretici
