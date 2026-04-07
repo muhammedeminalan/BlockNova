@@ -58,6 +58,12 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     /// Oyun sonu overlay — gösterilince eklenir, yeniden başlatınca kaldırılır
     var overlayNode: SKNode?
 
+    /// SwiftUI router'a ana menüye dönüş bildirmek için köprü kapanışı
+    var onReturnToHome: (() -> Void)?
+
+    /// SwiftUI katmanina game over sunum datasini iletir
+    var onGameOverChanged: ((GameOverPresentation?) -> Void)?
+
     // MARK: - Sürükleme Durumu
 
     /// Aktif sürüklenen parça — nil: sürükleme yok
@@ -208,7 +214,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
 
     // MARK: - Safe Area Güncelleme
 
-    /// GameViewController'dan gelen safe area inset'lerini alır ve layout'u yeniler
+    /// Container katmanindan gelen safe area inset'lerini alir ve layout'u yeniler
     func updateSafeAreaInsets(_ insets: UIEdgeInsets) {
         safeAreaInsets = insets
         layoutScene()
@@ -337,10 +343,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     // MARK: - TOUCH BEGIN
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        // Oyun sonu overlay açıksa sadece buton kontrolü
         if manager.state == .gameOver {
-            guard let touch = touches.first else { return }
-            handleOverlayTap(atPoint(touch.location(in: self)))
             return
         }
         guard manager.state == .playing,
@@ -512,6 +515,8 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     // MARK: - Yeniden Başlat
 
     func restartGame() {
+        onGameOverChanged?(nil)
+
         // Yeni oyun başlayınca kaydı sil — eski durum geçersiz
         GameSaveManager.shared.sil()
 
@@ -534,9 +539,8 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     // MARK: - Ana Menüye Dön
 
     func goToHome() {
-        let home = HomeScene(size: size)
-        home.scaleMode = scaleMode
-        view?.presentScene(home, transition: SKTransition.fade(withDuration: 0.4))
+        onGameOverChanged?(nil)
+        onReturnToHome?()
     }
 
     // MARK: - Skor Animasyonu
@@ -798,7 +802,15 @@ extension GameScene: GameManagerDelegate {
             GameManager.submitScore(manager.score)
 
             run(SKAction.wait(forDuration: 0.45)) { [weak self] in
-                self?.showGameOverOverlay()
+                guard let self else { return }
+                let score = self.manager.score
+                let highScore = self.manager.highScore
+                let presentation = GameOverPresentation(
+                    score: score,
+                    highScore: highScore,
+                    isNewRecord: score >= highScore
+                )
+                self.onGameOverChanged?(presentation)
             }
         }
     }

@@ -1,8 +1,22 @@
 import SwiftUI
 
 struct HomeView: View {
-    @ObservedObject var viewModel: HomeViewModel
-    var onOpenSettings: (() -> Void)? = nil
+    @StateObject private var viewModel: HomeViewModel
+    let onPlay: () -> Void
+    let onOpenLeaderboard: () -> Void
+    let onOpenSettings: () -> Void
+
+    init(
+        viewModel: HomeViewModel,
+        onPlay: @escaping () -> Void,
+        onOpenLeaderboard: @escaping () -> Void,
+        onOpenSettings: @escaping () -> Void
+    ) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+        self.onPlay = onPlay
+        self.onOpenLeaderboard = onOpenLeaderboard
+        self.onOpenSettings = onOpenSettings
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -23,20 +37,14 @@ struct HomeView: View {
                             title: "Liderlik",
                             systemImage: "trophy.fill",
                             tint: Color(red: 0.0, green: 0.83, blue: 1.0),
-                            action: { viewModel.openLeaderboard() }
+                            action: onOpenLeaderboard
                         )
 
                         secondaryButton(
                             title: "Ayarlar",
                             systemImage: "gearshape.fill",
                             tint: Color.white.opacity(0.9),
-                            action: {
-                                if let onOpenSettings {
-                                    onOpenSettings()
-                                } else {
-                                    viewModel.openSettings()
-                                }
-                            }
+                            action: onOpenSettings
                         )
                     }
 
@@ -96,7 +104,7 @@ struct HomeView: View {
                     .foregroundColor(Color(red: 0.0, green: 0.83, blue: 1.0))
             }
 
-            Text("Sürdür · Yerleştir · Patlat")
+            Text("Surdur · Yerlestir · Patlat")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.white.opacity(0.6))
         }
@@ -115,7 +123,7 @@ struct HomeView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("EN YÜKSEK SKOR")
+                Text("EN YUKSEK SKOR")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(Color.white.opacity(0.6))
                 Text("\(viewModel.highScore)")
@@ -139,7 +147,7 @@ struct HomeView: View {
     }
 
     private var primaryButton: some View {
-        Button(action: { viewModel.play() }) {
+        Button(action: onPlay) {
             Text("OYNA")
                 .font(.system(size: 22, weight: .heavy))
                 .foregroundColor(.white)
@@ -186,21 +194,11 @@ struct HomeView: View {
     }
 }
 
-private struct HomeViewPreview: View {
-    @State private var isShowingSettings = false
-
-    var body: some View {
-        HomeView(
-            viewModel: HomeViewModel(),
-            onOpenSettings: { isShowingSettings = true }
-        )
-        .fullScreenCover(isPresented: $isShowingSettings) {
-            SettingsView(viewModel: SettingsViewModel())
-                .interactiveDismissDisabled()
-        }
-    }
-}
-
 #Preview {
-    HomeViewPreview()
+    HomeView(
+        viewModel: HomeViewModel(),
+        onPlay: {},
+        onOpenLeaderboard: {},
+        onOpenSettings: {}
+    )
 }

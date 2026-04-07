@@ -1,8 +1,8 @@
 import Combine
 import Foundation
-import StoreKit
 import UIKit
 
+@MainActor
 final class SettingsViewModel: ObservableObject {
     @Published var isSoundEnabled: Bool {
         didSet {
@@ -18,46 +18,22 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
-    weak var presenter: UIViewController?
-
     private let settingsManager: SettingsManager
+    private let onClose: () -> Void
 
-    init(settingsManager: SettingsManager = .shared) {
-        self.settingsManager = settingsManager
-        self.isSoundEnabled = settingsManager.isSoundEnabled
-        self.isHapticEnabled = settingsManager.isHapticEnabled
-    }
-
-    var versionText: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-        return "v\(version) (\(build))"
-    }
-
-    func setPresenter(_ presenter: UIViewController) {
-        self.presenter = presenter
-    }
-
-
-    func openLeaderboard() {
-        HapticManager.impact(.light)
-        guard let presenter = presenter else { return }
-        GameManager.showLeaderboard(from: presenter)
-    }
-
-    func openPrivacyPolicy() {
-        HapticManager.impact(.light)
-        // TODO: Gizlilik politikasi URL'si netlesince burada ac.
-    }
-
-    func rateApp() {
-        HapticManager.impact(.light)
-        guard let scene = presenter?.view.window?.windowScene else { return }
-        SKStoreReviewController.requestReview(in: scene)
+    init(
+        settingsManager: SettingsManager? = nil,
+        onClose: @escaping () -> Void = {}
+    ) {
+        let resolvedSettingsManager = settingsManager ?? SettingsManager.shared
+        self.settingsManager = resolvedSettingsManager
+        self.onClose = onClose
+        self.isSoundEnabled = resolvedSettingsManager.isSoundEnabled
+        self.isHapticEnabled = resolvedSettingsManager.isHapticEnabled
     }
 
     func close() {
         HapticManager.impact(.light)
-        presenter?.dismiss(animated: true)
+        onClose()
     }
 }
