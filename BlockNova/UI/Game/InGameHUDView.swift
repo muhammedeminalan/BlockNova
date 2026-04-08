@@ -17,7 +17,13 @@ struct InGameHUDView: View {
                             .foregroundStyle(Color.yellow.opacity(0.95))
 
                         Text("\(highScore)")
-                            .font(.system(size: 24, weight: .heavy, design: .rounded))
+                            .font(
+                                .system(
+                                    size: 24,
+                                    weight: .heavy,
+                                    design: .rounded
+                                )
+                            )
                             .foregroundStyle(Color.yellow.opacity(0.95))
                             .minimumScaleFactor(0.65)
                             .lineLimit(1)
@@ -28,7 +34,9 @@ struct InGameHUDView: View {
                     .padding(.top, topInset)
 
                     Text("\(score)")
-                        .font(.system(size: 56, weight: .heavy, design: .rounded))
+                        .font(
+                            .system(size: 56, weight: .heavy, design: .rounded)
+                        )
                         .foregroundStyle(Color.white.opacity(0.96))
                         .minimumScaleFactor(0.55)
                         .lineLimit(1)
@@ -44,10 +52,16 @@ struct InGameHUDView: View {
 
                     Button(action: onSettingsTap) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color.black.opacity(0.22))
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(Color.cyan.opacity(0.55), lineWidth: 1.4)
+                            RoundedRectangle(
+                                cornerRadius: 12,
+                                style: .continuous
+                            )
+                            .fill(Color.black.opacity(0.22))
+                            RoundedRectangle(
+                                cornerRadius: 12,
+                                style: .continuous
+                            )
+                            .stroke(Color.cyan.opacity(0.55), lineWidth: 1.4)
 
                             Image(systemName: "gearshape.fill")
                                 .font(.system(size: 14, weight: .bold))
