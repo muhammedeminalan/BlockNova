@@ -103,8 +103,7 @@ final class PieceNode: SKNode {
 
         // Her offset icin bir hucre olustur
         for offset in shape.offsets {
-            let cell = SKSpriteNode(color: shape.color.sk,
-                                    size: CGSize(width: vs, height: vs))
+            let cell = makePreviewCell(visualSize: vs)
             // col → X (saga arti), row → Y (SpriteKit Y yukari, row asagi → eksi)
             cell.position = CGPoint(
                 x:  CGFloat(offset.col - minCol) * cs - centerOffsetX,
@@ -113,6 +112,48 @@ final class PieceNode: SKNode {
             cell.zPosition = 0.1
             addChild(cell)
         }
+    }
+
+    /// Preview hucrelerinin daha canli gorunmesi icin gloss + rim katmani ekler.
+    /// Neden: Oyun mekaniğine dokunmadan bloklarin algilanan parlakligini arttirmak.
+    private func makePreviewCell(visualSize: CGFloat) -> SKSpriteNode {
+        let cell = SKSpriteNode(
+            color: shape.color.sk,
+            size: CGSize(width: visualSize, height: visualSize)
+        )
+
+        let borderRect = CGRect(
+            x: -visualSize / 2,
+            y: -visualSize / 2,
+            width: visualSize,
+            height: visualSize
+        )
+        let border = SKShapeNode(rect: borderRect, cornerRadius: visualSize * 0.10)
+        border.strokeColor = UIColor.white.withAlphaComponent(0.34).sk
+        border.lineWidth = max(1, visualSize * 0.035)
+        border.fillColor = .clear
+        border.zPosition = 0.12
+        cell.addChild(border)
+
+        let gloss = SKSpriteNode(
+            color: UIColor.white.withAlphaComponent(0.28).sk,
+            size: CGSize(width: visualSize * 0.88, height: visualSize * 0.30)
+        )
+        gloss.anchorPoint = CGPoint(x: 0.5, y: 1.0)
+        gloss.position = CGPoint(x: 0, y: visualSize / 2 - visualSize * 0.07)
+        gloss.zPosition = 0.20
+        cell.addChild(gloss)
+
+        let bottomShadow = SKSpriteNode(
+            color: UIColor.black.withAlphaComponent(0.14).sk,
+            size: CGSize(width: visualSize * 0.90, height: visualSize * 0.28)
+        )
+        bottomShadow.anchorPoint = CGPoint(x: 0.5, y: 0.0)
+        bottomShadow.position = CGPoint(x: 0, y: -visualSize / 2 + visualSize * 0.06)
+        bottomShadow.zPosition = 0.05
+        cell.addChild(bottomShadow)
+
+        return cell
     }
 
     // MARK: - Grid Hizalama

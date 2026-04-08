@@ -11,7 +11,7 @@ import SpriteKit
 /// Grid olaylarini GameScene'e iletmek icin.
 protocol GridDelegate: AnyObject {
     /// Cizgiler temizlendiginde: kac cizgi (satir+sutun toplam)
-    func gridDidClearLines(_ count: Int)
+    func gridDidClearLines(_ count: Int, clearedCellWorldPositions: [CGPoint])
     /// Hucreler yerlestirildiginde: kac hucre
     func gridDidPlaceCells(_ count: Int)
     /// Yerlestirme islemi tamamen bitti (cizgi temizleme dahil) — game over kontrolu icin
@@ -96,6 +96,7 @@ final class GridNode: SKNode {
                 // SKShapeNode child olarak ekleniyor: cell silinmedigi icin hep var
                 let borderRect = CGRect(x: -vs / 2, y: -vs / 2, width: vs, height: vs)
                 let border = SKShapeNode(rect: borderRect)
+                border.name = "baseBorder"
                 border.fillColor   = .clear
                 border.strokeColor = C.cellBorderColor.sk
                 border.lineWidth   = C.screenW * 0.0012
@@ -107,11 +108,38 @@ final class GridNode: SKNode {
                     color: UIColor.black.withAlphaComponent(0.12).sk,
                     size: CGSize(width: vs * 0.92, height: vs * 0.92)
                 )
+                innerShadow.name = "innerShadow"
                 innerShadow.zPosition = 0.05
                 cell.addChild(innerShadow)
 
+                let gloss = SKSpriteNode(
+                    color: UIColor.white.withAlphaComponent(0.24).sk,
+                    size: CGSize(width: vs * 0.86, height: vs * 0.30)
+                )
+                gloss.name = "blockGloss"
+                gloss.anchorPoint = CGPoint(x: 0.5, y: 1.0)
+                gloss.position = CGPoint(x: 0, y: vs / 2 - vs * 0.06)
+                gloss.zPosition = 0.16
+                cell.addChild(gloss)
+
+                let rimRect = CGRect(
+                    x: -vs / 2 + vs * 0.05,
+                    y: -vs / 2 + vs * 0.05,
+                    width: vs * 0.90,
+                    height: vs * 0.90
+                )
+                let rim = SKShapeNode(rect: rimRect, cornerRadius: vs * 0.10)
+                rim.name = "blockRim"
+                rim.fillColor = .clear
+                rim.strokeColor = UIColor.white.withAlphaComponent(0.42).sk
+                rim.lineWidth = max(1, vs * 0.040)
+                rim.blendMode = .add
+                rim.zPosition = 0.18
+                cell.addChild(rim)
+
                 // Node referansini sakla — daha sonra renk degisimi icin
                 cellNodes[row][col] = cell
+                updateCellLayers(row: row, col: col, isFilled: false)
             }
         }
     }
@@ -339,6 +367,7 @@ final class GridNode: SKNode {
         guard isValid(row: row, col: col) else { return }
         cellColors[row][col] = color
         cellNodes[row][col].color = color.sk
+        updateCellLayers(row: row, col: col, isFilled: true)
     }
 
     /// Hucreyi bosaltir: veri nil, gorsel bos renk. Node SILINMEZ.
@@ -348,6 +377,7 @@ final class GridNode: SKNode {
         cellNodes[row][col].color = C.cellEmptyColor.sk
         cellNodes[row][col].alpha = 1
         cellNodes[row][col].setScale(1)
+        updateCellLayers(row: row, col: col, isFilled: false)
     }
 
     // MARK: - Cizgi Kontrolu ve Temizleme
@@ -411,7 +441,7 @@ final class GridNode: SKNode {
             // Patlama bittikten sonra hucreleri temizle
             for row in rowsToClear { for col in 0..<C.cols { self.clearCell(row: row, col: col) } }
             for col in colsToClear { for row in 0..<C.rows { self.clearCell(row: row, col: col) } }
-            self.delegate?.gridDidClearLines(lineCount)
+            self.delegate?.gridDidClearLines(lineCount, clearedCellWorldPositions: affectedWorldPositions)
             self.delegate?.gridDidFinishPlacement()
         }
     }
@@ -495,6 +525,9 @@ final class GridNode: SKNode {
         case 2:
             distanceRange = 40...80
             duration = 0.30
+        case 4:
+            distanceRange = 70...130
+            duration = 0.28
         default:
             distanceRange = 60...120
             duration = 0.32
@@ -513,6 +546,24 @@ final class GridNode: SKNode {
                         SKAction.wait(forDuration: 0.06),
                         SKAction.run { cell.color = UIColor(red: 1, green: 0.5, blue: 0, alpha: 1).sk },
                         SKAction.wait(forDuration: 0.10),
+                        SKAction.run { cell.color = originalColor }
+                    ])
+                    cell.run(flash) { [weak self] in
+                        self?.explodeCell(cell, distanceRange: distanceRange, duration: duration) {
+                            completed += 1
+                            if completed >= total {
+                                completion()
+                            }
+                        }
+                    }
+                } else if lineCount == 4 {
+                    // 4 cizgi combo icin daha parlak mavi-mor flash.
+                    let originalColor = cell.color
+                    let flash = SKAction.sequence([
+                        SKAction.run { cell.color = UIColor(red: 0.62, green: 0.36, blue: 1.0, alpha: 1).sk },
+                        SKAction.wait(forDuration: 0.05),
+                        SKAction.run { cell.color = UIColor(red: 0.20, green: 0.90, blue: 1.0, alpha: 1).sk },
+                        SKAction.wait(forDuration: 0.08),
                         SKAction.run { cell.color = originalColor }
                     ])
                     cell.run(flash) { [weak self] in
@@ -678,10 +729,38 @@ final class GridNode: SKNode {
     /// Hucreyi veri modeline gore renklendirir — dolu: blok rengi, bos: empty rengi
     private func refreshCellColor(row: Int, col: Int) {
         guard isValid(row: row, col: col) else { return }
+        let isFilled = cellColors[row][col] != nil
         if let color = cellColors[row][col] {
             cellNodes[row][col].color = color.sk
         } else {
             cellNodes[row][col].color = C.cellEmptyColor.sk
+        }
+        updateCellLayers(row: row, col: col, isFilled: isFilled)
+    }
+
+    /// Dolu hucrelerde parlama ve rim kuvvetini arttirir, bos hucrede geri ceker.
+    /// Neden: Sadece renk degil derinlik algisini da guclendirip daha "canli" his vermek.
+    private func updateCellLayers(row: Int, col: Int, isFilled: Bool) {
+        guard isValid(row: row, col: col) else { return }
+        let cell = cellNodes[row][col]
+
+        if let border = cell.childNode(withName: "baseBorder") as? SKShapeNode {
+            border.strokeColor = isFilled
+                ? UIColor.white.withAlphaComponent(0.30).sk
+                : C.cellBorderColor.sk
+            border.lineWidth = isFilled ? C.screenW * 0.0017 : C.screenW * 0.0012
+        }
+
+        if let gloss = cell.childNode(withName: "blockGloss") as? SKSpriteNode {
+            gloss.alpha = isFilled ? 1.0 : 0.18
+        }
+
+        if let rim = cell.childNode(withName: "blockRim") as? SKShapeNode {
+            rim.alpha = isFilled ? 0.95 : 0.10
+        }
+
+        if let innerShadow = cell.childNode(withName: "innerShadow") as? SKSpriteNode {
+            innerShadow.alpha = isFilled ? 0.08 : 0.14
         }
     }
 

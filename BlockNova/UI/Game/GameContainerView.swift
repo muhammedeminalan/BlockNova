@@ -9,8 +9,6 @@ struct GameContainerView: View {
     @StateObject private var bridge = GameContainerBridge()
     @State private var gameOverPresentation: GameOverPresentation?
     @State private var activeComboEffects: [ComboEffectPresentation] = []
-    @State private var comboStreak: Int = 0
-    @State private var lastComboTimestamp: Date?
     @State private var recentVariantsByLevel: [ComboEffectPresentation.Level: [Int]] = [:]
 
     var body: some View {
@@ -70,41 +68,21 @@ struct GameContainerView: View {
     }
 
     private func enqueueComboEffect(_ presentation: ComboEffectPresentation) {
-        let streak = nextStreakValue()
         let variant = nextVariant(for: presentation.level)
         let enriched = ComboEffectPresentation(
             level: presentation.level,
             points: presentation.points,
             styleVariant: variant,
-            streak: streak
+            streak: presentation.streak,
+            customTitle: presentation.customTitle
         )
 
-        // Neden: Arka arkaya combo geldiğinde ekranı doldurup dikkat dağıtmasını önlemek.
-        activeComboEffects.append(enriched)
-        if activeComboEffects.count > 2 {
-            activeComboEffects.removeFirst(activeComboEffects.count - 2)
-        }
+        // Neden: Ekranda sadece son event kalsin, buyuk overlay birikmesin.
+        activeComboEffects = [enriched]
     }
 
     private func removeComboEffect(withID id: UUID) {
         activeComboEffects.removeAll { $0.id == id }
-    }
-
-    private func nextStreakValue() -> Int {
-        let now = Date()
-        defer { lastComboTimestamp = now }
-
-        guard let lastComboTimestamp else {
-            comboStreak = 1
-            return comboStreak
-        }
-
-        if now.timeIntervalSince(lastComboTimestamp) <= 2.0 {
-            comboStreak = min(comboStreak + 1, 9)
-        } else {
-            comboStreak = 1
-        }
-        return comboStreak
     }
 
     private func nextVariant(for level: ComboEffectPresentation.Level) -> Int {
