@@ -16,7 +16,9 @@ struct RootView: View {
             SettingsView(
                 viewModel: SettingsViewModel(
                     onClose: { router.closeSettings() }
-                )
+                ),
+                showsReturnToHomeButton: router.screen == .game,
+                onReturnToHome: router.screen == .game ? { router.showHome() } : nil
             )
             .interactiveDismissDisabled()
         }

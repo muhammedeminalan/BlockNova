@@ -2,6 +2,18 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
+    let showsReturnToHomeButton: Bool
+    let onReturnToHome: (() -> Void)?
+
+    init(
+        viewModel: SettingsViewModel,
+        showsReturnToHomeButton: Bool = false,
+        onReturnToHome: (() -> Void)? = nil
+    ) {
+        self.viewModel = viewModel
+        self.showsReturnToHomeButton = showsReturnToHomeButton
+        self.onReturnToHome = onReturnToHome
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -14,6 +26,10 @@ struct SettingsView: View {
 
                     VStack(spacing: 16) {
                         settingsCard
+
+                        if showsReturnToHomeButton {
+                            returnToHomeCard
+                        }
                     }
                     .padding(.horizontal, 20)
 
@@ -102,6 +118,28 @@ struct SettingsView: View {
         }
     }
 
+    private var returnToHomeCard: some View {
+        card {
+            Button(action: handleReturnToHome) {
+                HStack(spacing: 10) {
+                    Image(systemName: "house.fill")
+                        .font(.system(size: 16, weight: .bold))
+
+                    Text("Ana Menüye Dön")
+                        .font(.system(size: 16, weight: .bold))
+
+                    Spacer()
+
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.vertical, 4)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
     private func card<Content: View>(@ViewBuilder content: () -> Content)
         -> some View
     {
@@ -116,6 +154,11 @@ struct SettingsView: View {
                             .stroke(Color.white.opacity(0.12), lineWidth: 1)
                     )
             )
+    }
+
+    private func handleReturnToHome() {
+        HapticManager.impact(.medium)
+        onReturnToHome?()
     }
 }
 
