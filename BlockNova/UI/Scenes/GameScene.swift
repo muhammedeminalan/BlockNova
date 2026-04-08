@@ -33,7 +33,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     /// Sunum katmanı — skor/durum sorgulama için
     private(set) var viewModel: GameViewModel!
     /// Şekil dağıtıcısı — üç katmanlı çeşitlilik sistemi
-    private var shapeDispenser: ShapeDispenser!
+    var shapeDispenser: ShapeDispenser!
     /// Alt tepsi — 3 parça slotu, nil = boş slot
     var trayPieces: [PieceNode?] = [nil, nil, nil]
     /// Preview slotları — hit-test ve yerleşim için
@@ -67,9 +67,9 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     private var lastTouchLocation: CGPoint? = nil
 
     /// Arka arkaya cizgi kirma zinciri (combo sayaci)
-    private var comboChainCount: Int = 0
+    var comboChainCount: Int = 0
     /// Mevcut yerlestirmede cizgi kirildi mi? Finish adiminda zincir reset karari icin.
-    private var didClearLineInCurrentPlacement: Bool = false
+    var didClearLineInCurrentPlacement: Bool = false
 
     // MARK: - Sahne Kurulumu
 
@@ -117,91 +117,6 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         NotificationCenter.default.removeObserver(self)
     }
 
-    // MARK: - Oyun Kaydetme
-
-    /// Mevcut oyun durumunu UserDefaults'a yazar.
-    /// Game over durumunda kayıt yapılmaz — devam edilecek oyun yoktur.
-    @objc func saveGameState() {
-        guard manager.state == .playing else { return }
-
-        // Grid renk datasını [[String?]] formatına dönüştür: dolu hücre hex, boş nil
-        let gridRenkleri: [[String?]] = (0..<C.rows).map { satir in
-            (0..<C.cols).map { sutun in
-                gridNode.cellColors[satir][sutun]?.hexString
-            }
-        }
-
-        // Tepsideki parçaların tip adlarını kaydet
-        let parcaTipleri: [String] = trayPieces.compactMap { $0?.shape.type.rawValue }
-
-        let state = SavedGameState(
-            score:             manager.score,
-            highScore:         manager.highScore,
-            gridColors:        gridRenkleri,
-            currentPieceTypes: parcaTipleri
-        )
-        GameSaveManager.shared.save(state)
-    }
-
-    // MARK: - Oyun Geri Yükleme
-
-    /// Kaydedilmiş durumu sahneye uygular: skor, grid ve tepsi parçaları.
-    private func restoreGameState(_ savedState: SavedGameState) {
-        // Manager'ı kayıtlı skorla senkronize et
-        manager.restoreScore(savedState.score, highScore: savedState.highScore)
-
-        // Grid hücrelerini renkleriyle doldur — sınır kontrolü: bozuk kayıt için güvenli
-        // UIColor(hex:) optional döndürmez, nil kontrolü hex string üzerinden yapılır
-        for satir in 0..<min(savedState.gridColors.count, C.rows) {
-            let satirVerisi = savedState.gridColors[satir]
-            for sutun in 0..<min(satirVerisi.count, C.cols) {
-                if let hex = satirVerisi[sutun] {
-                    let renk = UIColor(hex: hex)
-                    gridNode.fillCell(row: satir, col: sutun, color: renk)
-                }
-            }
-        }
-
-        // Tepsi parçalarını rawValue → BlockShapeType → BlockShape zinciiriyle yükle
-        let sekiller: [BlockShape] = savedState.currentPieceTypes.compactMap { rawDeger in
-            guard let tip = BlockShapeType(rawValue: rawDeger) else { return nil }
-            return BlockShape.shape(for: tip)
-        }
-
-        if !sekiller.isEmpty {
-            placePiecesInTray(sekiller)
-        } else {
-            // Parça verisi bozuksa yeni dağıt
-            dealNewPieces()
-        }
-    }
-
-    /// Verilen şekilleri tepsi slotlarına yerleştirir.
-    /// dealNewPieces ile aynı mantık — şekiller dışarıdan gelir.
-    private func placePiecesInTray(_ sekiller: [BlockShape]) {
-        for (i, sekil) in sekiller.prefix(3).enumerated() {
-            let parca          = PieceNode(shape: sekil)
-            parca.slotIndex    = i
-            if i < previewSlots.count {
-                let slot = previewSlots[i]
-                parca.position     = slot.position
-                parca.homePosition = slot.position
-                slot.piece         = parca
-                parca.applyPreviewScale(slotSize: slot.size)
-            }
-            parca.zPosition    = C.zPiece
-            parca.alpha        = 0
-            addChild(parca)
-            trayPieces[i] = parca
-
-            let gecikme = Double(i) * 0.06
-            parca.run(SKAction.sequence([
-                SKAction.wait(forDuration: gecikme),
-                SKAction.fadeIn(withDuration: 0.18)
-            ]))
-        }
-    }
-
     // MARK: - Safe Area Güncelleme
 
     /// Container katmanindan gelen safe area inset'lerini alir ve layout'u yeniler
@@ -213,7 +128,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     // MARK: - Manager Kurulumu
 
     private func setupManager() {
-        manager   = GameManager.shared
+        manager = GameManager.shared
         manager.delegate = self
         viewModel = GameViewModel(manager: manager)
         shapeDispenser = ShapeDispenser()
@@ -222,7 +137,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     // MARK: - Grid Kurulumu
 
     private func setupGrid() {
-        gridNode          = GridNode()
+        gridNode = GridNode()
         gridNode.delegate = self
         gridNode.position = CGPoint(x: C.gridCenterX, y: effectiveGridCenterY)
         gridNode.zPosition = C.zGrid
@@ -235,7 +150,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         let panel = SKSpriteNode(color: C.bgColor.sk,
                                  size: CGSize(width: C.screenW, height: C.bottomPanelHeight))
         panel.anchorPoint = CGPoint(x: 0.5, y: 0.0)
-        panel.zPosition   = C.zPanel
+        panel.zPosition = C.zPanel
         addChild(panel)
         bottomPanelNode = panel
 
@@ -248,56 +163,6 @@ final class GameScene: SKScene, SafeAreaUpdatable {
             let slot = PreviewSlotNode(index: i, size: C.previewSlotSize)
             addChild(slot)
             previewSlots.append(slot)
-        }
-    }
-
-    // MARK: - Parça Dağıtma
-
-    /// Tepsi state'iyle eşleşmeyen eski PieceNode'ları temizler.
-    /// Neden: Bazı cihazlarda animation completion kaçarsa eski node sahnede kalıp
-    /// yeni gelen parçalarla üst üste binebiliyor.
-    private func removeOrphanTrayPieces() {
-        let aktifKimlikler = Set(trayPieces.compactMap { $0 }.map { ObjectIdentifier($0) })
-
-        let sahnedekiParcalar = children.compactMap { $0 as? PieceNode }
-        for parca in sahnedekiParcalar {
-            let kimlik = ObjectIdentifier(parca)
-            guard !aktifKimlikler.contains(kimlik) else { continue }
-            parca.removeAllActions()
-            parca.removeFromParent()
-        }
-    }
-
-    /// Alt tepsiye ShapeDispenser'dan 3 yeni parça yerleştirir.
-    /// Grid'in güncel durumu iletilir — akıllı üretim için grid analizi burada başlar.
-    func dealNewPieces() {
-        // Yeni tur dağıtımından önce sahnede kalan yetim parça varsa temizle.
-        removeOrphanTrayPieces()
-
-        // Grid durumunu ilet: ShapeDispenser neredeyse dolu satır/sütun olduğunu bilsin
-        let shapes   = shapeDispenser.nextSet(for: gridNode.cellColors)
-
-        for (i, shape) in shapes.enumerated() {
-            let piece = PieceNode(shape: shape)
-            piece.slotIndex    = i
-            if i < previewSlots.count {
-                let slot = previewSlots[i]
-                piece.position     = slot.position
-                piece.homePosition = slot.position
-                slot.piece         = piece
-                piece.applyPreviewScale(slotSize: slot.size)
-            }
-            piece.zPosition    = C.zPiece
-            piece.alpha        = 0
-            addChild(piece)
-            trayPieces[i] = piece
-
-            // Fade-in — slide animasyonu kasaya neden olabilir
-            let delay = Double(i) * 0.07
-            piece.run(SKAction.sequence([
-                SKAction.wait(forDuration: delay),
-                SKAction.fadeIn(withDuration: 0.20)
-            ]))
         }
     }
 
@@ -329,7 +194,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
             return
         }
 
-        draggedPiece     = selected
+        draggedPiece = selected
         originalPosition = selected.position
 
         // beginDrag önce çağrılır: setScale içeride çalışır ve parçanın görsel boyutu değişir.
@@ -341,9 +206,9 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         dragOffset = CGPoint(x: selected.position.x - location.x, y: C.dragOffsetY)
 
         // Anlık konum ataması — gecikme hissi olmadan parça parmağa yapışır
-        selected.position   = CGPoint(x: location.x + dragOffset.x, y: location.y + dragOffset.y)
+        selected.position = CGPoint(x: location.x + dragOffset.x, y: location.y + dragOffset.y)
         lastHighlightAnchor = nil
-        lastTouchLocation   = location
+        lastTouchLocation = location
         updateHighlight(for: selected)
     }
 
@@ -385,8 +250,8 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         gridNode.clearHighlight()
         gridNode.clearWillClearFlash()
         lastHighlightAnchor = nil
-        draggedPiece        = nil
-        lastTouchLocation   = nil
+        draggedPiece = nil
+        lastTouchLocation = nil
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -468,7 +333,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
 
     // MARK: - Oyun Bitti Kontrolü
 
-    private func checkGameOver() {
+    func checkGameOver() {
         let remaining = trayPieces.compactMap { $0?.shape }
         guard !remaining.isEmpty else { return }
         if gridNode.noPieceFits(shapes: remaining) {
@@ -485,7 +350,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         GameSaveManager.shared.deleteSavedGame()
 
         trayPieces.forEach { $0?.removeFromParent() }
-        trayPieces   = [nil, nil, nil]
+        trayPieces = [nil, nil, nil]
         draggedPiece = nil
         comboChainCount = 0
         didClearLineInCurrentPlacement = false
@@ -506,13 +371,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         onReturnToHome?()
     }
 
-    /// SwiftUI katmanindan "Ana Menü" cikisi isterken cagirilir.
-    /// Gameplay davranisini degistirmez; sadece cikis oncesi state'i guvenle kaydeder.
-    func prepareForExitToHome() {
-        saveGameState()
-    }
-
-    private func notifyScoreChanged(score: Int, highScore: Int) {
+    func notifyScoreChanged(score: Int, highScore: Int) {
         onScoreChanged?(score, highScore)
     }
 
@@ -522,203 +381,11 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     func makeLabel(_ text: String, font: String,
                    size: CGFloat, color: SKColor) -> SKLabelNode {
         let lbl = SKLabelNode(fontNamed: font)
-        lbl.text     = text
+        lbl.text = text
         lbl.fontSize = size
         lbl.fontColor = color
         lbl.horizontalAlignmentMode = .center
-        lbl.verticalAlignmentMode   = .baseline
+        lbl.verticalAlignmentMode = .baseline
         return lbl
-    }
-}
-
-// MARK: - GridDelegate
-
-extension GameScene: GridDelegate {
-
-    func gridDidClearLines(_ count: Int, clearedCellWorldPositions: [CGPoint]) {
-        didClearLineInCurrentPlacement = true
-        comboChainCount += 1
-
-        let linePoints = manager.previewPointsForLines(count)
-        manager.addScore(forLines: count)
-        HapticManager.impact(.heavy)
-        // Çizgi temizlenince long-pop sesi çal
-        SoundManager.shared.playClear(on: self)
-        if count >= 2 {
-            SoundManager.shared.playCombo(on: self)
-        }
-        if count >= 3 {
-            // Neden: Mega combo anında daha güçlü ödül hissi için.
-            HapticManager.notification(.success)
-        }
-
-        showCellScorePopups(totalPoints: linePoints, at: clearedCellWorldPositions)
-
-        guard shouldShowLargeComboEffect(chain: comboChainCount) else { return }
-        let effect = ComboEffectPresentation(
-            level: effectLevel(forClearedLineCount: count, chain: comboChainCount),
-            points: linePoints,
-            streak: comboChainCount,
-            customTitle: comboTitle(forChain: comboChainCount)
-        )
-        onComboEffectTriggered?(effect)
-    }
-
-    func gridDidPlaceCells(_ count: Int) {
-        manager.addScore(forCells: count)
-    }
-
-    func gridDidFinishPlacement() {
-        // Satir/sutun temizleme bittikten sonra: tepsi bosaldiysa yeni parcalar dagit,
-        // sonra game over kontrolu yap. Grid verisi artik gunceldir.
-        if trayPieces.allSatisfy({ $0 == nil }) {
-            run(SKAction.wait(forDuration: 0.25)) { [weak self] in
-                self?.dealNewPieces()
-                self?.run(SKAction.wait(forDuration: 0.3)) {
-                    self?.checkGameOver()
-                }
-            }
-        } else {
-            checkGameOver()
-        }
-    }
-
-}
-
-// MARK: - GameManagerDelegate
-
-extension GameScene: GameManagerDelegate {
-
-    func didUpdateScore(_ score: Int, highScore: Int, isNewRecord: Bool) {
-        notifyScoreChanged(score: score, highScore: highScore)
-
-        if isNewRecord {
-            // Yeni rekor kırılınca achievement sesi çal — her skor artışında değil, sadece rekorда
-            SoundManager.shared.playRecord(on: self)
-            showNewRecordEffect()
-        }
-    }
-
-    func didChangeState(_ state: GameState) {
-        if state == .gameOver {
-            comboChainCount = 0
-            didClearLineInCurrentPlacement = false
-            HapticManager.notification(.error)
-            // Oyun bitince game-over sesi çal
-            SoundManager.shared.playGameOver(on: self)
-
-            // Game over olunca kaydı sil — devam edilecek oyun kalmadı
-            GameSaveManager.shared.deleteSavedGame()
-
-            // Skoru Game Center'a gönder — her bitişte çağrılır, sadece rekorda değil
-            GameManager.submitScore(manager.score)
-
-            run(SKAction.wait(forDuration: 0.45)) { [weak self] in
-                guard let self else { return }
-                let score = self.manager.score
-                let highScore = self.manager.highScore
-                let presentation = GameOverPresentation(
-                    score: score,
-                    highScore: highScore,
-                    isNewRecord: self.manager.newRecordAchieved
-                )
-                self.onGameOverChanged?(presentation)
-            }
-        }
-    }
-
-    /// "YENİ REKOR!" uçan yazısı
-    private func showNewRecordEffect() {
-        let lbl = makeLabel("YENI REKOR!", font: C.fontBold,
-                            size: C.screenH * 0.024, color: C.goldColor.sk)
-        lbl.position  = CGPoint(x: C.screenW / 2,
-                                y: effectiveGridCenterY + C.gridTotalHeight / 2 + C.screenH * 0.05)
-        lbl.zPosition = C.zUI + 3
-        lbl.alpha     = 0
-        addChild(lbl)
-
-        lbl.run(SKAction.sequence([
-            SKAction.group([
-                SKAction.fadeIn(withDuration: 0.2),
-                SKAction.sequence([
-                    SKAction.scale(to: 1.3, duration: 0.18),
-                    SKAction.scale(to: 1.0, duration: 0.18)
-                ])
-            ]),
-            SKAction.wait(forDuration: 1.4),
-            SKAction.fadeOut(withDuration: 0.35),
-            SKAction.removeFromParent()
-        ]))
-    }
-
-    /// Buyuk ekran combo efektini her patlamada degil, secili adimlarda tetikler.
-    /// Neden: Surekli overlay yerine milestone odakli geri bildirim daha temiz hissettirir.
-    private func shouldShowLargeComboEffect(chain: Int) -> Bool {
-        // Sadece milestone adimlarinda (5/10/15...) buyuk merkez animasyon ciksin.
-        // 1/2/4 gibi adimlarda merkez overlay yok; lokal kirilma efektleri devam eder.
-        guard chain > 0 else { return false }
-        return chain.isMultiple(of: 5)
-    }
-
-    /// Cizgi sayisi + combo adimina gore daha guclu efekt seviyesini sec.
-    private func effectLevel(forClearedLineCount lineCount: Int, chain: Int) -> ComboEffectPresentation.Level {
-        if chain.isMultiple(of: 5) {
-            return .mega
-        }
-        if chain >= 10 {
-            return .mega
-        }
-        if lineCount >= 4 {
-            return .mega
-        }
-        if lineCount == 2 || chain.isMultiple(of: 5) {
-            return .double
-        }
-        return .line
-    }
-
-    /// Milestone adimlari icin basligi daha dikkat cekici hale getirir.
-    private func comboTitle(forChain chain: Int) -> String? {
-        guard chain.isMultiple(of: 5) else { return nil }
-        switch chain {
-        case 15...:
-            return "NOVA STORM x\(chain)!"
-        case 10...:
-            return "ULTRA SURGE x\(chain)!"
-        default:
-            return "FRENZY x\(chain)!"
-        }
-    }
-
-    /// Kirilan hucrelerin ustunde, kazanilan puani hucreye dagitip kisa sureli gosterir.
-    private func showCellScorePopups(totalPoints: Int, at worldPositions: [CGPoint]) {
-        guard totalPoints > 0, !worldPositions.isEmpty else { return }
-
-        let count = worldPositions.count
-        let basePoint = totalPoints / count
-        let remainder = totalPoints % count
-
-        for (index, position) in worldPositions.enumerated() {
-            let point = max(1, basePoint + (index < remainder ? 1 : 0))
-            let label = makeLabel("+\(point)", font: C.fontBold, size: C.screenH * 0.017, color: C.goldColor.sk)
-            label.position = position
-            label.zPosition = C.zUI + 4
-            label.alpha = 0
-            addChild(label)
-
-            let driftX = CGFloat.random(in: -8...8)
-            let move = SKAction.moveBy(x: driftX, y: C.cellSize * 0.95, duration: 0.38)
-            move.timingMode = .easeOut
-            let fadeIn = SKAction.fadeIn(withDuration: 0.06)
-            let fadeOut = SKAction.fadeOut(withDuration: 0.20)
-
-            label.run(
-                SKAction.sequence([
-                    fadeIn,
-                    SKAction.group([move, SKAction.sequence([SKAction.wait(forDuration: 0.16), fadeOut])]),
-                    SKAction.removeFromParent(),
-                ])
-            )
-        }
     }
 }
