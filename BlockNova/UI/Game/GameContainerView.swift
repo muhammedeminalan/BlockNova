@@ -5,11 +5,14 @@ import UIKit
 
 struct GameContainerView: View {
     let onReturnToHome: () -> Void
+    let onOpenSettings: () -> Void
 
     @StateObject private var bridge = GameContainerBridge()
     @State private var gameOverPresentation: GameOverPresentation?
     @State private var activeComboEffects: [ComboEffectPresentation] = []
     @State private var recentVariantsByLevel: [ComboEffectPresentation.Level: [Int]] = [:]
+    @State private var score: Int = 0
+    @State private var highScore: Int = 0
 
     var body: some View {
         ZStack {
@@ -27,9 +30,20 @@ struct GameContainerView: View {
                 },
                 onComboEffectTriggered: { presentation in
                     enqueueComboEffect(presentation)
+                },
+                onScoreChanged: { currentScore, currentHighScore in
+                    score = currentScore
+                    highScore = currentHighScore
                 }
             )
             .ignoresSafeArea()
+
+            InGameHUDView(
+                score: score,
+                highScore: highScore,
+                onSettingsTap: onOpenSettings
+            )
+            .zIndex(0.9)
 
             ForEach(activeComboEffects) { combo in
                 ComboEffectOverlayView(
@@ -128,6 +142,7 @@ private struct GameSceneHostController: UIViewControllerRepresentable {
     let onReturnToHome: () -> Void
     let onGameOverChanged: (GameOverPresentation?) -> Void
     let onComboEffectTriggered: (ComboEffectPresentation) -> Void
+    let onScoreChanged: (Int, Int) -> Void
 
     func makeUIViewController(context: Context) -> GameContainerViewController {
         let controller = GameContainerViewController()
@@ -135,6 +150,7 @@ private struct GameSceneHostController: UIViewControllerRepresentable {
         controller.onReturnToHome = onReturnToHome
         controller.onGameOverChanged = onGameOverChanged
         controller.onComboEffectTriggered = onComboEffectTriggered
+        controller.onScoreChanged = onScoreChanged
         return controller
     }
 
@@ -143,6 +159,7 @@ private struct GameSceneHostController: UIViewControllerRepresentable {
         uiViewController.onReturnToHome = onReturnToHome
         uiViewController.onGameOverChanged = onGameOverChanged
         uiViewController.onComboEffectTriggered = onComboEffectTriggered
+        uiViewController.onScoreChanged = onScoreChanged
     }
 }
 
@@ -150,6 +167,7 @@ final class GameContainerViewController: UIViewController {
     var onReturnToHome: (() -> Void)?
     var onGameOverChanged: ((GameOverPresentation?) -> Void)?
     var onComboEffectTriggered: ((ComboEffectPresentation) -> Void)?
+    var onScoreChanged: ((Int, Int) -> Void)?
     weak var bridge: GameContainerBridge?
 
     private weak var gameScene: GameScene?
@@ -174,6 +192,11 @@ final class GameContainerViewController: UIViewController {
         }
         scene.onComboEffectTriggered = { [weak self] comboEffect in
             self?.onComboEffectTriggered?(comboEffect)
+        }
+        scene.onScoreChanged = { [weak self] score, highScore in
+            DispatchQueue.main.async {
+                self?.onScoreChanged?(score, highScore)
+            }
         }
 
         gameScene = scene

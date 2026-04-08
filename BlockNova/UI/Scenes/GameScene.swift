@@ -39,19 +39,9 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     /// Preview slotları — hit-test ve yerleşim için
     var previewSlots: [PreviewSlotNode] = []
 
-    // MARK: - Üst Panel Node'ları
-
-    var topPanelNode: SKSpriteNode?
-    var topPanelSeparator: SKShapeNode?
-    var scoreTitleLabel: SKLabelNode?
-    var scoreValueLabel: SKLabelNode!
-    var highScoreTitleLabel: SKLabelNode?
-    var highScoreValueLabel: SKLabelNode!
-
     // MARK: - Alt Panel Node'ları
 
     var bottomPanelNode: SKSpriteNode?
-    var bottomPanelSeparator: SKShapeNode?
 
     /// SwiftUI router'a ana menüye dönüş bildirmek için köprü kapanışı
     var onReturnToHome: (() -> Void)?
@@ -60,6 +50,8 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     var onGameOverChanged: ((GameOverPresentation?) -> Void)?
     /// SwiftUI katmanina combo efekt sunum datasini iletir
     var onComboEffectTriggered: ((ComboEffectPresentation) -> Void)?
+    /// SwiftUI HUD katmanina skor verisini iletir
+    var onScoreChanged: ((Int, Int) -> Void)?
 
     // MARK: - Sürükleme Durumu
 
@@ -91,7 +83,6 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         // Kayit varsa restoreScore zaten degerleri geri yazar
         manager.reset()
         setupGrid()
-        setupTopPanel()
         setupBottomPanel()
 
         // Uygulama arka plana geçince oyun durumunu kaydet
@@ -118,6 +109,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
 
         // İlk layout safe area'ya göre yapılır
         layoutScene()
+        notifyScoreChanged(score: manager.score, highScore: manager.highScore)
     }
 
     /// Sahne ekrandan ayrılınca observer'ları temizle — retain cycle ve çift tetikleme önler
@@ -157,10 +149,6 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     private func restoreGameState(_ savedState: SavedGameState) {
         // Manager'ı kayıtlı skorla senkronize et
         manager.restoreScore(savedState.score, highScore: savedState.highScore)
-
-        // Etiketler manager'daki normalize state'den gelsin; kayittaki stale degeri ezme.
-        scoreValueLabel?.text     = "\(manager.score)"
-        highScoreValueLabel?.text = "\(manager.highScore)"
 
         // Grid hücrelerini renkleriyle doldur — sınır kontrolü: bozuk kayıt için güvenli
         // UIColor(hex:) optional döndürmez, nil kontrolü hex string üzerinden yapılır
@@ -241,62 +229,15 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         addChild(gridNode)
     }
 
-    // MARK: - Üst Panel Kurulumu
-
-    private func setupTopPanel() {
-        let panel = SKSpriteNode(color: C.panelColor.sk,
-                                 size: CGSize(width: C.screenW, height: C.topPanelHeight))
-        panel.anchorPoint = CGPoint(x: 0.5, y: 1.0)
-        panel.zPosition   = C.zPanel
-        addChild(panel)
-        topPanelNode = panel
-
-        let sep = makeSeparator(y: C.screenH - C.topPanelHeight)
-        addChild(sep)
-        topPanelSeparator = sep
-
-        // Sol: mevcut skor
-        let scoreTitle = makeLabel("SKOR", font: C.fontMedium,
-                                   size: C.screenH * 0.016, color: C.accentColor.sk)
-        scoreTitle.horizontalAlignmentMode = .center
-        scoreTitle.zPosition = C.zUI
-        addChild(scoreTitle)
-        scoreTitleLabel = scoreTitle
-
-        scoreValueLabel = makeLabel("0", font: C.fontBold,
-                                    size: C.screenH * 0.038, color: .white)
-        scoreValueLabel.horizontalAlignmentMode = .center
-        scoreValueLabel.zPosition = C.zUI
-        addChild(scoreValueLabel)
-
-        // Sağ: en yüksek skor
-        let hsTitle = makeLabel("EN YUKSEK", font: C.fontMedium,
-                                size: C.screenH * 0.016, color: C.accentColor.sk)
-        hsTitle.horizontalAlignmentMode = .center
-        hsTitle.zPosition = C.zUI
-        addChild(hsTitle)
-        highScoreTitleLabel = hsTitle
-
-        highScoreValueLabel = makeLabel(viewModel.highScoreText, font: C.fontBold,
-                                        size: C.screenH * 0.038, color: C.goldColor.sk)
-        highScoreValueLabel.horizontalAlignmentMode = .center
-        highScoreValueLabel.zPosition = C.zUI
-        addChild(highScoreValueLabel)
-    }
-
     // MARK: - Alt Panel Kurulumu
 
     private func setupBottomPanel() {
-        let panel = SKSpriteNode(color: C.panelColor.sk,
+        let panel = SKSpriteNode(color: C.bgColor.sk,
                                  size: CGSize(width: C.screenW, height: C.bottomPanelHeight))
         panel.anchorPoint = CGPoint(x: 0.5, y: 0.0)
         panel.zPosition   = C.zPanel
         addChild(panel)
         bottomPanelNode = panel
-
-        let sep = makeSeparator(y: C.bottomPanelHeight)
-        addChild(sep)
-        bottomPanelSeparator = sep
 
         setupPreviewSlots()
     }
@@ -363,18 +304,19 @@ final class GameScene: SKScene, SafeAreaUpdatable {
     // MARK: - TOUCH BEGIN
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
+        let location = touch.location(in: self)
+
         if manager.state == .gameOver {
             return
         }
-        guard manager.state == .playing,
-              let touch = touches.first else { return }
+        guard manager.state == .playing else { return }
         // Aktif sürükleme varken yeni piece seçme — ownership sabit kalsın
         guard draggedPiece == nil else { return }
 
         // Kullanıcı yeni sürükleme başlatırken sahnede kalan yetim parça varsa temizle.
         removeOrphanTrayPieces()
 
-        let location = touch.location(in: self)
         let selectedSlot = previewSlots.first { slot in
             slot.calculateAccumulatedFrame().contains(location)
         }
@@ -553,8 +495,7 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         manager.reset()
         shapeDispenser.resetHistory()
 
-        scoreValueLabel.text     = "0"
-        highScoreValueLabel.text = viewModel.highScoreText
+        notifyScoreChanged(score: manager.score, highScore: manager.highScore)
         dealNewPieces()
     }
 
@@ -571,16 +512,8 @@ final class GameScene: SKScene, SafeAreaUpdatable {
         saveGameState()
     }
 
-    // MARK: - Skor Animasyonu
-
-    /// Skor artinca label ziplat — net geri bildirim
-    private func animateScoreLabel() {
-        scoreValueLabel.removeAction(forKey: "scoreBounce")
-        let bounce = SKAction.sequence([
-            SKAction.scale(to: 1.25, duration: 0.08),
-            SKAction.scale(to: 1.0, duration: 0.08)
-        ])
-        scoreValueLabel.run(bounce, withKey: "scoreBounce")
+    private func notifyScoreChanged(score: Int, highScore: Int) {
+        onScoreChanged?(score, highScore)
     }
 
     // MARK: - Etiket Fabrikası
@@ -657,11 +590,7 @@ extension GameScene: GridDelegate {
 extension GameScene: GameManagerDelegate {
 
     func didUpdateScore(_ score: Int, highScore: Int, isNewRecord: Bool) {
-        scoreValueLabel.text     = "\(score)"
-        highScoreValueLabel.text = "\(highScore)"
-
-        // Skor artinca label ziplasin — daha net geri bildirim
-        animateScoreLabel()
+        notifyScoreChanged(score: score, highScore: highScore)
 
         if isNewRecord {
             // Yeni rekor kırılınca achievement sesi çal — her skor artışında değil, sadece rekorда

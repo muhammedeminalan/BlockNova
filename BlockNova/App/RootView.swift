@@ -54,9 +54,15 @@ struct RootView: View {
                 }
             )
         case .game:
-            GameContainerView(onReturnToHome: {
-                router.showHome()
-            })
+            GameContainerView(
+                onReturnToHome: {
+                    router.showHome()
+                },
+                onOpenSettings: {
+                    HapticManager.impact(.light)
+                    router.openSettings()
+                }
+            )
             .id(router.gameSessionID)
         }
     }

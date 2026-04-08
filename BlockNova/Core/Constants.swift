@@ -34,7 +34,7 @@ enum C {
     // Böylece kısa ekranlarda taşma olmaz, uzun ekranlarda daha büyük görünür
     static var gridTotalWidth: CGFloat {
         let usableH = max(0, screenH - topPanelHeight - bottomPanelHeight)
-        let maxByWidth  = screenW * 0.92
+        let maxByWidth = screenW * 0.92
         let maxByHeight = usableH * 0.96
         return min(maxByWidth, maxByHeight)
     }
@@ -90,67 +90,107 @@ enum C {
     // MARK: - Z Pozisyonları (Katman Sırası)
     // Daha büyük zPosition daha önde görünür — katman çakışmasını önler
     static let zBackground: CGFloat = 0
-    static let zGrid:       CGFloat = 1
-    static let zCell:       CGFloat = 2
-    static let zPanel:      CGFloat = 5
-    static let zPiece:      CGFloat = 10
-    static let zDrag:       CGFloat = 100
-    static let zUI:         CGFloat = 20
-    static let zOverlay:    CGFloat = 200
+    static let zGrid: CGFloat = 1
+    static let zCell: CGFloat = 2
+    static let zPanel: CGFloat = 5
+    static let zPiece: CGFloat = 10
+    static let zDrag: CGFloat = 100
+    static let zUI: CGFloat = 20
+    static let zOverlay: CGFloat = 200
 
     // MARK: - Renkler
-    // Koyu lacivert arka plan — gözü yormaz, bloklar öne çıkar
-    static let bgColor          = UIColor(red: 0.06, green: 0.07, blue: 0.14, alpha: 1.0)
-    // Grid arka planı — bgColor'dan biraz daha açık, grid alanını hissettirir
-    static let gridBgColor      = UIColor(red: 0.08, green: 0.09, blue: 0.19, alpha: 1.0)
-    // Boş hücre rengi — grid içinde görünür ama dikkat dağıtmaz
-    static let cellEmptyColor   = UIColor(red: 0.10, green: 0.11, blue: 0.24, alpha: 1.0)
-    // Hücre kenarlık rengi — hafif belirgin
-    static let cellBorderColor  = UIColor(red: 0.26, green: 0.28, blue: 0.50, alpha: 1.0)
-    // Panel arka planı — hafif saydam, içeriği öne çıkarır
-    static let panelColor       = UIColor(red: 0.09, green: 0.10, blue: 0.20, alpha: 0.96)
+    // Koyu mavi-cyan zemin — blokların neon tonlarını daha iyi öne çıkarır
+    static let bgColor = UIColor(red: 0.02, green: 0.08, blue: 0.18, alpha: 1.0)
+    // Grid arka planı — zeminle ton uyumlu ama bir adım daha parlak
+    static let gridBgColor = UIColor(
+        red: 0.04,
+        green: 0.12,
+        blue: 0.26,
+        alpha: 1.0
+    )
+    // Boş hücre rengi — bloklarla kontrastı korurken modern mavi tona kayar
+    static let cellEmptyColor = UIColor(
+        red: 0.07,
+        green: 0.16,
+        blue: 0.32,
+        alpha: 1.0
+    )
+    // Hücre kenarlık rengi — cyan alt tonla daha canlı grid sınırı verir
+    static let cellBorderColor = UIColor(
+        red: 0.20,
+        green: 0.40,
+        blue: 0.62,
+        alpha: 1.0
+    )
+    // Panel arka planı — zeminle uyumlu, daha modern ve temiz
+    static let panelColor = UIColor(
+        red: 0.04,
+        green: 0.10,
+        blue: 0.22,
+        alpha: 0.93
+    )
     // Vurgu rengi (cyan) — başlık, etiket ön planları için
-    static let accentColor      = UIColor(red: 0.26, green: 0.85, blue: 1.00, alpha: 1.0)
+    static let accentColor = UIColor(
+        red: 0.20,
+        green: 0.92,
+        blue: 1.00,
+        alpha: 1.0
+    )
     // Altın rengi — rekor skoru için
-    static let goldColor        = UIColor(red: 1.00, green: 0.86, blue: 0.10, alpha: 1.0)
+    static let goldColor = UIColor(
+        red: 1.00,
+        green: 0.86,
+        blue: 0.10,
+        alpha: 1.0
+    )
     // Geçerli highlight — yerleştirilebilir alan yeşil
-    static let highlightValid   = UIColor(red: 0.16, green: 0.98, blue: 0.48, alpha: 0.76)
+    static let highlightValid = UIColor(
+        red: 0.16,
+        green: 0.98,
+        blue: 0.48,
+        alpha: 0.76
+    )
     // Geçersiz highlight — yerleştirilemeyen alan kırmızı
-    static let highlightInvalid = UIColor(red: 1.00, green: 0.24, blue: 0.28, alpha: 0.76)
+    static let highlightInvalid = UIColor(
+        red: 1.00,
+        green: 0.24,
+        blue: 0.28,
+        alpha: 0.76
+    )
 
     // MARK: - Blok Renkleri (Neon Palet)
     // Her şekil tipi sabit bir renk alır — oyuncu şekli renkle tanır
-    static let colorSingle      = UIColor(hex: "#FF4668") // Canlı kırmızı
-    static let colorSingleGold  = UIColor(hex: "#FFD93A") // Altin tek hucre
-    static let colorH2          = UIColor(hex: "#FF7B1A") // Sıcak turuncu
-    static let colorH3          = UIColor(hex: "#FFE14A") // Altın sarı
-    static let colorV2          = UIColor(hex: "#2CFF94") // Taze yeşil
-    static let colorV3          = UIColor(hex: "#2D8CFF") // Parlak mavi
-    static let colorSquare      = UIColor(hex: "#8A5CFF") // Canlı mor
-    static let colorL           = UIColor(hex: "#FF4FB8") // Canlı pembe
-    static let colorJ           = UIColor(hex: "#00E7F3") // Turkuaz
-    static let colorT           = UIColor(hex: "#FFB020") // Amber
-    static let colorS           = UIColor(hex: "#45F95E") // Lime yeşil
-    static let colorZ           = UIColor(hex: "#D45DFF") // Orkide
-    static let colorSquare3     = UIColor(hex: "#FF2F52") // Ateş kırmızısı — 3x3 en büyük blok
-    static let colorSquare4     = UIColor(hex: "#FF8A00") // Turuncu
-    static let colorH4          = UIColor(hex: "#00D9FF") // Uzun yatay (4)
-    static let colorH5          = UIColor(hex: "#19CFFF") // Uzun yatay (5)
-    static let colorV4          = UIColor(hex: "#71F000") // Uzun dikey (4)
-    static let colorV5          = UIColor(hex: "#42E85C") // Uzun dikey (5)
-    static let colorRect2x3     = UIColor(hex: "#FFBF3A") // 2x3 dikdörtgen
-    static let colorRect3x2     = UIColor(hex: "#FF9A2A") // 3x2 dikdörtgen
-    static let colorRect3x4     = UIColor(hex: "#9F5DFF") // Acik mor
-    static let colorRect4x3     = UIColor(hex: "#F3C700") // Koyu sari
-    static let colorMiniL       = UIColor(hex: "#FF5FD3") // Mini L
-    static let colorMiniJ       = UIColor(hex: "#4EEBFF") // Mini J
-    static let colorMiniLUp     = UIColor(hex: "#FF8A2A") // Mini L ust
-    static let colorCorner      = UIColor(hex: "#A56FFF") // Corner
-    static let colorSmallT      = UIColor(hex: "#FFC93A") // Small T
-    static let colorLUp         = UIColor(hex: "#6A2BFF") // L ust
-    static let colorLUpLeft     = UIColor(hex: "#24A9FF") // L ust sol
-    static let colorL4          = UIColor(hex: "#FF4F94") // L4
-    static let colorJ4          = UIColor(hex: "#37F58A") // J4
+    static let colorSingle = UIColor(hex: "#FF4668")  // Canlı kırmızı
+    static let colorSingleGold = UIColor(hex: "#FFD93A")  // Altin tek hucre
+    static let colorH2 = UIColor(hex: "#FF7B1A")  // Sıcak turuncu
+    static let colorH3 = UIColor(hex: "#FFE14A")  // Altın sarı
+    static let colorV2 = UIColor(hex: "#2CFF94")  // Taze yeşil
+    static let colorV3 = UIColor(hex: "#2D8CFF")  // Parlak mavi
+    static let colorSquare = UIColor(hex: "#8A5CFF")  // Canlı mor
+    static let colorL = UIColor(hex: "#FF4FB8")  // Canlı pembe
+    static let colorJ = UIColor(hex: "#00E7F3")  // Turkuaz
+    static let colorT = UIColor(hex: "#FFB020")  // Amber
+    static let colorS = UIColor(hex: "#45F95E")  // Lime yeşil
+    static let colorZ = UIColor(hex: "#D45DFF")  // Orkide
+    static let colorSquare3 = UIColor(hex: "#FF2F52")  // Ateş kırmızısı — 3x3 en büyük blok
+    static let colorSquare4 = UIColor(hex: "#FF8A00")  // Turuncu
+    static let colorH4 = UIColor(hex: "#00D9FF")  // Uzun yatay (4)
+    static let colorH5 = UIColor(hex: "#19CFFF")  // Uzun yatay (5)
+    static let colorV4 = UIColor(hex: "#71F000")  // Uzun dikey (4)
+    static let colorV5 = UIColor(hex: "#42E85C")  // Uzun dikey (5)
+    static let colorRect2x3 = UIColor(hex: "#FFBF3A")  // 2x3 dikdörtgen
+    static let colorRect3x2 = UIColor(hex: "#FF9A2A")  // 3x2 dikdörtgen
+    static let colorRect3x4 = UIColor(hex: "#9F5DFF")  // Acik mor
+    static let colorRect4x3 = UIColor(hex: "#F3C700")  // Koyu sari
+    static let colorMiniL = UIColor(hex: "#FF5FD3")  // Mini L
+    static let colorMiniJ = UIColor(hex: "#4EEBFF")  // Mini J
+    static let colorMiniLUp = UIColor(hex: "#FF8A2A")  // Mini L ust
+    static let colorCorner = UIColor(hex: "#A56FFF")  // Corner
+    static let colorSmallT = UIColor(hex: "#FFC93A")  // Small T
+    static let colorLUp = UIColor(hex: "#6A2BFF")  // L ust
+    static let colorLUpLeft = UIColor(hex: "#24A9FF")  // L ust sol
+    static let colorL4 = UIColor(hex: "#FF4F94")  // L4
+    static let colorJ4 = UIColor(hex: "#37F58A")  // J4
 
     // MARK: - Scoring
     static let scoreCellBase: Int = 2
@@ -161,7 +201,7 @@ enum C {
 
     // MARK: - Font
     // Tipografi tutarliligi icin merkezi font adlari
-    static let fontBold   = "AvenirNext-Bold"
+    static let fontBold = "AvenirNext-Bold"
     static let fontMedium = "AvenirNext-Medium"
 
     // MARK: - UserDefaults Anahtari
@@ -186,9 +226,9 @@ extension UIColor {
         Scanner(string: s).scanHexInt64(&rgb)
         // 0-255 araligini 0-1 araligina cevir — UIColor beklediginden
         self.init(
-            red:   CGFloat((rgb >> 16) & 0xFF) / 255,
-            green: CGFloat((rgb >> 8)  & 0xFF) / 255,
-            blue:  CGFloat(rgb         & 0xFF) / 255,
+            red: CGFloat((rgb >> 16) & 0xFF) / 255,
+            green: CGFloat((rgb >> 8) & 0xFF) / 255,
+            blue: CGFloat(rgb & 0xFF) / 255,
             alpha: 1
         )
     }
