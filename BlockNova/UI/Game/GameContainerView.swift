@@ -8,6 +8,7 @@ struct GameContainerView: View {
 
     @StateObject private var bridge = GameContainerBridge()
     @State private var gameOverPresentation: GameOverPresentation?
+    @State private var activeComboEffects: [ComboEffectPresentation] = []
 
     var body: some View {
         ZStack {
@@ -22,9 +23,23 @@ struct GameContainerView: View {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         gameOverPresentation = presentation
                     }
+                },
+                onComboEffectTriggered: { presentation in
+                    enqueueComboEffect(presentation)
                 }
             )
             .ignoresSafeArea()
+
+            ForEach(activeComboEffects) { combo in
+                ComboEffectOverlayView(
+                    presentation: combo,
+                    onFinished: {
+                        removeComboEffect(withID: combo.id)
+                    }
+                )
+                .zIndex(1)
+                .allowsHitTesting(false)
+            }
 
             if let presentation = gameOverPresentation {
                 GameOverOverlayView(
@@ -49,6 +64,18 @@ struct GameContainerView: View {
                 .zIndex(2)
             }
         }
+    }
+
+    private func enqueueComboEffect(_ presentation: ComboEffectPresentation) {
+        // Neden: Arka arkaya combo geldiğinde ekranı doldurup dikkat dağıtmasını önlemek.
+        activeComboEffects.append(presentation)
+        if activeComboEffects.count > 2 {
+            activeComboEffects.removeFirst(activeComboEffects.count - 2)
+        }
+    }
+
+    private func removeComboEffect(withID id: UUID) {
+        activeComboEffects.removeAll { $0.id == id }
     }
 }
 
@@ -75,12 +102,14 @@ private struct GameSceneHostController: UIViewControllerRepresentable {
     @ObservedObject var bridge: GameContainerBridge
     let onReturnToHome: () -> Void
     let onGameOverChanged: (GameOverPresentation?) -> Void
+    let onComboEffectTriggered: (ComboEffectPresentation) -> Void
 
     func makeUIViewController(context: Context) -> GameContainerViewController {
         let controller = GameContainerViewController()
         controller.bridge = bridge
         controller.onReturnToHome = onReturnToHome
         controller.onGameOverChanged = onGameOverChanged
+        controller.onComboEffectTriggered = onComboEffectTriggered
         return controller
     }
 
@@ -88,12 +117,14 @@ private struct GameSceneHostController: UIViewControllerRepresentable {
         uiViewController.bridge = bridge
         uiViewController.onReturnToHome = onReturnToHome
         uiViewController.onGameOverChanged = onGameOverChanged
+        uiViewController.onComboEffectTriggered = onComboEffectTriggered
     }
 }
 
 final class GameContainerViewController: UIViewController {
     var onReturnToHome: (() -> Void)?
     var onGameOverChanged: ((GameOverPresentation?) -> Void)?
+    var onComboEffectTriggered: ((ComboEffectPresentation) -> Void)?
     weak var bridge: GameContainerBridge?
 
     private weak var gameScene: GameScene?
@@ -115,6 +146,9 @@ final class GameContainerViewController: UIViewController {
         }
         scene.onGameOverChanged = { [weak self] presentation in
             self?.onGameOverChanged?(presentation)
+        }
+        scene.onComboEffectTriggered = { [weak self] comboEffect in
+            self?.onComboEffectTriggered?(comboEffect)
         }
 
         gameScene = scene
