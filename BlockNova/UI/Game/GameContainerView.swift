@@ -9,6 +9,9 @@ struct GameContainerView: View {
     @StateObject private var bridge = GameContainerBridge()
     @State private var gameOverPresentation: GameOverPresentation?
     @State private var activeComboEffects: [ComboEffectPresentation] = []
+    @State private var comboStreak: Int = 0
+    @State private var lastComboTimestamp: Date?
+    @State private var recentVariantsByLevel: [ComboEffectPresentation.Level: [Int]] = [:]
 
     var body: some View {
         ZStack {
@@ -67,8 +70,17 @@ struct GameContainerView: View {
     }
 
     private func enqueueComboEffect(_ presentation: ComboEffectPresentation) {
+        let streak = nextStreakValue()
+        let variant = nextVariant(for: presentation.level)
+        let enriched = ComboEffectPresentation(
+            level: presentation.level,
+            points: presentation.points,
+            styleVariant: variant,
+            streak: streak
+        )
+
         // Neden: Arka arkaya combo geldiğinde ekranı doldurup dikkat dağıtmasını önlemek.
-        activeComboEffects.append(presentation)
+        activeComboEffects.append(enriched)
         if activeComboEffects.count > 2 {
             activeComboEffects.removeFirst(activeComboEffects.count - 2)
         }
@@ -76,6 +88,41 @@ struct GameContainerView: View {
 
     private func removeComboEffect(withID id: UUID) {
         activeComboEffects.removeAll { $0.id == id }
+    }
+
+    private func nextStreakValue() -> Int {
+        let now = Date()
+        defer { lastComboTimestamp = now }
+
+        guard let lastComboTimestamp else {
+            comboStreak = 1
+            return comboStreak
+        }
+
+        if now.timeIntervalSince(lastComboTimestamp) <= 2.0 {
+            comboStreak = min(comboStreak + 1, 9)
+        } else {
+            comboStreak = 1
+        }
+        return comboStreak
+    }
+
+    private func nextVariant(for level: ComboEffectPresentation.Level) -> Int {
+        let totalVariantCount = 6
+        let history = recentVariantsByLevel[level] ?? []
+        let lastTwo = Set(history.suffix(2))
+
+        let candidates = (0..<totalVariantCount).filter { !lastTwo.contains($0) }
+        let selected = (candidates.isEmpty ? Array(0..<totalVariantCount) : candidates).randomElement() ?? 0
+
+        var updated = history
+        updated.append(selected)
+        if updated.count > 4 {
+            updated.removeFirst(updated.count - 4)
+        }
+        recentVariantsByLevel[level] = updated
+
+        return selected
     }
 }
 

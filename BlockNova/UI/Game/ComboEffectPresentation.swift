@@ -1,7 +1,7 @@
 import Foundation
 
 struct ComboEffectPresentation: Identifiable, Equatable {
-    enum Level: Equatable {
+    enum Level: Hashable {
         case line
         case double
         case mega
@@ -11,17 +11,20 @@ struct ComboEffectPresentation: Identifiable, Equatable {
     let level: Level
     let points: Int
     let styleVariant: Int
+    let streak: Int
 
     init(
         id: UUID = UUID(),
         level: Level,
         points: Int,
-        styleVariant: Int = Int.random(in: 0...2)
+        styleVariant: Int = 0,
+        streak: Int = 1
     ) {
         self.id = id
         self.level = level
         self.points = points
         self.styleVariant = styleVariant
+        self.streak = max(1, streak)
     }
 
     var title: String {
@@ -38,5 +41,10 @@ struct ComboEffectPresentation: Identifiable, Equatable {
         case 2: return .double
         default: return .mega
         }
+    }
+
+    var streakText: String? {
+        guard streak >= 2 else { return nil }
+        return "x\(streak) STREAK"
     }
 }
