@@ -1,23 +1,66 @@
 <div align="center">
+  <img src="BlockNova/Resources/Assets.xcassets/AppIcon.appiconset/app_icon_fixed.png" width="120" alt="BlockNova Icon"/>
+  <h1>BlockNova</h1>
+  <p><b>SwiftUI + SpriteKit hibrit mimari ile geliştirilen native iOS blok bulmaca oyunu</b></p>
+  <p>Sürükle. Yerleştir. Satır ve sütunları temizle. Zinciri büyüt.</p>
 
-<img src="BlockNova/Resources/Assets.xcassets/AppIcon.appiconset/app_icon_fixed.png" width="120" alt="Nova Block Icon"/>
-
-# Nova Block
-
-**Swift + SpriteKit ile geliştirilmiş native iOS blok bulmaca oyunu**
-
-*Sürükle. Yerleştir. Patlat.*
-
-<br/>
-
-[![iOS](https://img.shields.io/badge/iOS-15.5%2B-0A84FF?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/ios/)
-[![Swift](https://img.shields.io/badge/Swift-5-FA7343?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
-[![SpriteKit](https://img.shields.io/badge/SpriteKit-Framework-9B59B6?style=for-the-badge&logo=apple&logoColor=white)]()
+[![iOS](https://img.shields.io/badge/iOS-15.6%2B-0A84FF?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/ios/)
+[![Swift](https://img.shields.io/badge/Swift-5.0-FA7343?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
+[![SwiftUI](https://img.shields.io/badge/SwiftUI-UI-0EA5E9?style=for-the-badge)](https://developer.apple.com/xcode/swiftui/)
+[![SpriteKit](https://img.shields.io/badge/SpriteKit-Gameplay-7C3AED?style=for-the-badge)](https://developer.apple.com/spritekit/)
+[![CI](https://img.shields.io/github/actions/workflow/status/muhammedeminalan/BlockNova/ios-ci.yml?branch=main&style=for-the-badge&label=iOS%20CI)](https://github.com/muhammedeminalan/BlockNova/actions/workflows/ios-ci.yml)
 [![Lisans](https://img.shields.io/badge/Lisans-MIT-22C55E?style=for-the-badge)](LICENSE)
-[![GitHub](https://img.shields.io/badge/GitHub-BlockNova-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/muhammedeminalan/BlockNova)
-[![App Store](https://img.shields.io/badge/App%20Store-%C4%B0ndir-000000?style=for-the-badge&logo=app-store&logoColor=white)](https://apps.apple.com/us/app/nova-block/id6760556862)
-
+[![App Store](https://img.shields.io/badge/App%20Store-İndir-000000?style=for-the-badge&logo=app-store&logoColor=white)](https://apps.apple.com/us/app/nova-block/id6760556862)
 </div>
+
+---
+
+## İçindekiler
+
+- [Proje Özeti](#proje-özeti)
+- [Mimari Snapshot](#mimari-snapshot)
+- [Ekran Görüntüleri](#ekran-görüntüleri)
+- [Öne Çıkan Özellikler](#öne-çıkan-özellikler)
+- [Proje Yapısı](#proje-yapısı)
+- [Kurulum (Hızlı)](#kurulum-hızlı)
+- [Kurulum (Detaylı)](#kurulum-detaylı)
+- [Kalite Kapıları](#kalite-kapıları)
+- [Dokümantasyon](#dokümantasyon)
+- [Katkı](#katkı)
+- [Lisans](#lisans)
+
+---
+
+## Proje Özeti
+
+BlockNova, 8x8 grid üzerinde oynanan, sürükle-bırak odaklı bir blok bulmaca oyunudur.
+
+Proje, son migrasyonlarla birlikte hibrit bir yapıya geçti:
+- Oyun çekirdeği ve drag mekaniği **SpriteKit** tarafında.
+- Home / Loading / Settings / HUD / Overlay katmanları **SwiftUI** tarafında.
+- Yönlendirme ve ekran geçişleri `AppRouter` üzerinden yönetiliyor.
+- Oyun sahnesi `GameContainerView` ile SwiftUI içine host ediliyor.
+
+---
+
+## Mimari Snapshot
+
+```mermaid
+flowchart TD
+    A["BlockNovaApp"] --> B["RootView"]
+    B --> C["AppRouter"]
+    C --> D["LoadingView"]
+    C --> E["HomeView"]
+    C --> F["GameContainerView"]
+    F --> G["GameContainerViewController (UIKit Bridge)"]
+    G --> H["GameScene (SpriteKit Core)"]
+    H --> I["GridNode / PieceNode / PreviewSlotNode"]
+    H --> J["GameManager + ShapeDispenser"]
+    H --> K["GameSaveManager + CloudManager"]
+    H --> L["SwiftUI Overlay: HUD / Combo / GameOver"]
+```
+
+Detaylı mimari dokümanı: [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ---
 
@@ -33,146 +76,62 @@
 
 ---
 
-## Oyun Hakkında
+## Öne Çıkan Özellikler
 
-**Nova Block**, 8×8 bir ızgaraya renkli blok parçaları sürükleyip bıraktığın, dolu satır ve sütunları temizleyerek puan kazandığın bir bulmaca oyunudur. Zaman baskısı yoktur — her hamle düşünerek yapılabilir. Asıl zorluk, ızgaranın dolmasına izin vermeden ne kadar uzun hayatta kalabileceğindir.
-
-> Basit kurallar, derin strateji. Bir kez başlayınca bırakmak zordur.
-
----
-
-## Özellikler
-
-### Temel Oynanış
-- **8×8 ızgara** — 64 hücreli klasik blok bulmaca alanı
-- **23 şekil tipi** — tekli hücre, yatay/dikey çizgiler (2–5 hücre), dikdörtgenler, L/J/T/S/Z varyantları, köşe şekilleri ve daha fazlası
-- **Sürükle-bırak** — parça parmağın üstüne kalkar, en yakın geçerli ızgara hücresine otomatik snap'lenir
-- **Combo sistemi** — tek hamlede birden fazla satır/sütun temizleyerek katlamalı bonus puan kazan
-- **Oyun sonu tespiti** — mevcut parçaların hiçbiri ızgaraya sığmadığında oyun otomatik biter
-
-### Puan Sistemi
-
-| Aksiyon | Puan |
-|---------|------|
-| Her yerleştirilen hücre | +2 |
-| 1 satır / sütun temizleme | +20 |
-| 2 çizgi aynı anda temizleme | +50 *(combo bonusu)* |
-| 3+ çizgi aynı anda temizleme | +n×20 + bonus |
-
-### Görsel Geri Bildirim
-- **Yeşil / Kırmızı önizleme** — sürükleme sırasında geçerli/geçersiz alana anlık renk gösterimi
-- **Uçan metin efektleri** — `LINE!` · `DOUBLE!` · `COMBO x3!` ekran animasyonları
-- **"YENİ REKOR!" badge'i** — rekor kırılınca patlama animasyonu
-- **Skor micro-animasyon** — her puan güncellemesinde label canlanır
-
-### Platform & UX
-- **Game Center liderlik tablosu** — dünyadaki diğer oyuncularla global sıralama
-- **Otomatik kayıt & devam** — uygulama kapansa, çöküse ya da telefon kilitlense bile oyun kaldığı yerden devam eder
-- **Haptic feedback** — yerleştirme, çizgi temizleme ve oyun sonu için ayrı titreşim profilleri
-- **Ses efektleri** — her aksiyon için özel ses tasarımı (pop, temizleme, başarı, oyun sonu)
-- **Arka plan Game Center auth** — kimlik doğrulama loading ekranında oyunu bloklamadan tamamlanır
-- **Responsive tasarım** — SE'den Pro Max'e tüm iPhone boyutlarında pixel-perfect görünüm
-
----
-
-## Teknik Detaylar
-
-| | |
-|---|---|
-| **Platform** | iOS 15.5+ · iPhone · Portrait |
-| **Dil** | Swift 5 |
-| **Framework'ler** | SpriteKit · GameKit · UIKit |
-| **Mimari** | MVC + extension tabanlı scene ayrımı |
-| **Kalıcılık** | UserDefaults (JSON encoding) — sunucu yok, ağ bağlantısı gerekmez |
-| **Bağımlılık** | **Sıfır** — yalnızca Apple framework'leri kullanıldı |
-| **Boyutlandırma** | Tüm değerler `screenW / screenH` oransal — hardcode piksel yok |
-
----
-
-## Mimari Kararlar
-
-| Karar | Gerekçe |
-|-------|---------|
-| Fizik motoru kullanılmadı | Grid tabanlı mantık deterministik ve öngörülebilir olmalıydı |
-| Node'lar silinmiyor, renk değiştiriliyor | Node oluşturma/silmeden kaynaklanan frame drop sorunlarını tamamen ortadan kaldırır |
-| `touchesMoved`'da SKAction yok | Direkt `position` atamasıyla gecikme sıfır, sürükleme akıcı |
-| `GameManagerDelegate` pattern | Skor ve durum değişiklikleri scene'e gevşek bağlı — test edilebilir |
-| 3 katmanlı şekil dağıtımı | Tekrar önleme + ızgara analizi + set dengesi oyunu adil ve monoton olmayan tutar |
-| Extension tabanlı scene dosyaları | `GameScene+Layout` ve `GameScene+Overlay` her dosyayı odaklı ve okunabilir tutar |
+- 8x8 oyun tahtası ve akıcı sürükle-bırak deneyimi
+- 29 farklı blok şekli (micro/line/rectangle/corner/zigzag)
+- Milestone bazlı combo efekt akışı (`5`, `10`, `15` zinciri)
+- Kırılan hücre üstünde puan popup animasyonları
+- Canlı skor animasyonlu oyun içi HUD
+- iCloud + local fallback high score senkronu
+- Game Center liderlik tablosu entegrasyonu
+- Oyun state kalıcılığı (arka plan/kapanış sonrası devam)
+- Ses + titreşim ayarları
 
 ---
 
 ## Proje Yapısı
 
-```
+```text
 BlockNova/
 ├── App/
-│   ├── AppDelegate.swift               # Uygulama yaşam döngüsü
-│   └── GameViewController.swift        # SKView host, safe area yönetimi, GKGameCenterControllerDelegate
-│
+│   ├── BlockNovaApp.swift
+│   ├── RootView.swift
+│   ├── AppRouter.swift
+│   └── AppDelegate.swift
 ├── Core/
-│   ├── Constants.swift                 # Boyut sabitleri (screenW/screenH oranları), renkler, puan değerleri, Game Center ID
-│   ├── GameSaveManager.swift           # UserDefaults kalıcılığı (JSON encoding/decoding)
-│   ├── HapticManager.swift             # UIImpactFeedbackGenerator sarmalayıcısı
-│   └── SoundManager.swift              # SKAction tabanlı ses yönetimi, ses başına cooldown
-│
+│   ├── Constants.swift
+│   ├── CloudManager.swift
+│   ├── GameSaveManager.swift
+│   ├── HapticManager.swift
+│   ├── SoundManager.swift
+│   └── NotificationNames.swift
 ├── Game/
 │   ├── Models/
-│   │   ├── BlockShape.swift            # 23 şekil tipi tanımı (offset dizileri, renkler, kategoriler)
-│   │   └── GameManager.swift           # Skor yönetimi, durum makinesi, Game Center entegrasyonu
 │   ├── Logic/
-│   │   └── ShapeDispenser.swift        # 3 katmanlı akıllı parça üretim sistemi
 │   └── ViewModels/
-│       └── GameViewModel.swift         # Skor metni formatlama ve durum sorguları
-│
 ├── UI/
+│   ├── Loading/
+│   ├── Home/
+│   ├── Settings/
+│   ├── Game/
+│   │   └── Components/
 │   ├── Scenes/
-│   │   ├── LoadingScene.swift          # Splash ekranı + arka plan Game Center auth
-│   │   ├── HomeScene.swift             # Animasyonlu ana menü
-│   │   ├── GameScene.swift             # Ana oyun döngüsü ve dokunma yönetimi
-│   │   ├── GameScene+Layout.swift      # Safe area'ya duyarlı responsive yerleşim
-│   │   └── GameScene+Overlay.swift     # Oyun sonu modal yapısı
-│   └── Nodes/
-│       ├── GridNode.swift              # 8×8 ızgara görsel ve veri katmanı
-│       ├── BlockNode.swift             # Tekil hücre node'u
-│       ├── PieceNode.swift             # Sürüklenebilir çok hücreli parça
-│       └── PreviewSlotNode.swift       # Alt tepsi slot konteyneri
-│
+│   ├── Nodes/
+│   └── Common/
+├── Utils/
+│   └── SettingsManager.swift
 ├── Resources/
-│   ├── Assets.xcassets/                # Uygulama ikonu, accent renk
-│   └── Sounds/                         # pop.wav · long-pop.wav · achievement.wav · game-over.wav
-│
+│   ├── Assets.xcassets/
+│   ├── Base.lproj/LaunchScreen.storyboard
+│   └── Sounds/
 └── SupportingFiles/
-    └── BlockNova.entitlements          # Game Center yetkisi
+    └── BlockNova.entitlements
 ```
 
 ---
 
-## Öne Çıkan Teknik Detaylar
-
-**ShapeDispenser — 3 Katmanlı Sistem**
-
-`Game/Logic/ShapeDispenser.swift` dosyasındaki parça üreteci rastgeleliği ve adaleti dengeler:
-
-1. **Tekrar önleme** — son 6 üretilen şekil tipini takip eder, erken tekrar eden şekillere 0.5× ceza uygular
-2. **Izgara analizi** — her 3 parçada bir tahtayı analiz eder; bir satır veya sütun ≥5/8 doluysa o yönü temizleyebilecek parçaları öne çıkarır
-3. **Set dengesi** — her 3'lü grup en az bir küçük, bir büyük ve bir ipucu tabanlı parça içermesi garanti edilir
-
-Bunun üzerine bir fit-count bağ bozucu, her şekli mevcut ızgarada yerleştirilebileceği konum sayısına göre ağırlıklandırır; yerleştirilemez parçaların sunulması önlenir.
-
-**Node Havuzu**
-
-64 ızgara hücresi node'u oyun başlangıcında bir kez oluşturulur. Oyun sırasında yalnızca renkleri güncellenir — hiçbir node eklenmez ya da kaldırılmaz. Bu, ızgara ne kadar yoğun kullanılırsa kullanılsın render hattını 60 fps'de stabil tutar.
-
-**Responsive Yerleşim**
-
-Her boyut (hücre büyüklüğü, panel yükseklikleri, font boyutları, parça ofsetleri) `Constants.C` üzerinden `screenW` ve `screenH` oranlarıyla hesaplanır. Aynı binary, herhangi bir size class dallanması olmaksızın desteklenen tüm iPhone modellerinde doğru çalışır.
-
----
-
-## Kurulum
-
-Xcode 15+ gereklidir. Paket yöneticisi veya harici bağımlılık gerekmez:
+## Kurulum (Hızlı)
 
 ```bash
 git clone https://github.com/muhammedeminalan/BlockNova.git
@@ -180,34 +139,73 @@ cd BlockNova
 open BlockNova.xcodeproj
 ```
 
-Simulator veya fiziksel cihazda doğrudan çalıştırılabilir.
+---
 
-> **Not:** Game Center özellikleri (liderlik tablosu) yalnızca Apple ID ile giriş yapılmış fiziksel bir cihazda çalışır.
+## Kurulum (Detaylı)
+
+1. Gereksinimler
+- Güncel stabil Xcode sürümü
+- iOS 15.6+ hedefleyen bir cihaz/simulator
+- App Store/Game Center testleri için Apple ID (fiziksel cihaz önerilir)
+
+2. Projeyi aç
+- `BlockNova.xcodeproj` dosyasını Xcode ile aç.
+- Target: `BlockNova`
+- Scheme: `BlockNova`
+
+3. Signing & Capabilities
+- `Signing & Capabilities` altında kendi Team’ini seç.
+- Bundle Identifier çakışmıyorsa mevcut kimlikle devam et.
+- Gerekli capability’ler:
+  - Game Center
+  - iCloud (Key-Value Storage)
+
+4. Çalıştırma profilleri
+- Gameplay doğrulaması: fiziksel cihaz
+- Görsel/screenshot: simulator
+- Not: simulator’da Game Center/iCloud log gürültüsü görülebilir; bu tek başına crash anlamına gelmez.
+
+5. Archive öncesi checklist
+- `Version` ve `Build` numaralarını artır
+- Release archive al
+- Kısa smoke test yap:
+  - Home -> Game -> Settings -> Home
+  - Hızlı sürükle-bırak + combo
+  - Game over -> replay/home
 
 ---
 
-## Geliştirici
+## Kalite Kapıları
 
-<div align="center">
+CI pipeline şu adımları otomatik koşar:
+- Debug build
+- Release build
+- Static analyze
 
-**Muhammed Emin Alan**
+Workflow: [ios-ci.yml](.github/workflows/ios-ci.yml)
 
-[![GitHub](https://img.shields.io/badge/GitHub-muhammedeminalan-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/muhammedeminalan)
+Not: Projede henüz test target tanımlı değil; bu yüzden ana kalite kapısı build + analyze + manuel smoke test.
 
-</div>
+---
+
+## Dokümantasyon
+
+- Mimari ve sorumluluk haritası: [ARCHITECTURE.md](ARCHITECTURE.md)
+- Katkı kuralları: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Davranış kuralları: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- Test checklist: [TEST_CHECKLIST.md](TEST_CHECKLIST.md)
+
+---
+
+## Katkı
+
+Katkı sürecini başlatmadan önce:
+1. [CONTRIBUTING.md](CONTRIBUTING.md) dosyasını oku.
+2. Uygunsa issue aç veya mevcut issue’yu üstlen.
+3. Küçük, odaklı PR gönder.
 
 ---
 
 ## Lisans
 
-Bu proje [MIT Lisansı](LICENSE) altında dağıtılmaktadır.
-
----
-
-<div align="center">
-  <a href="https://apps.apple.com/us/app/nova-block/id6760556862">
-    <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" height="50" alt="App Store'dan İndir"/>
-  </a>
-  <br/><br/>
-  <sub>Swift &amp; SpriteKit ile geliştirildi</sub>
-</div>
+Bu proje [MIT Lisansı](LICENSE) ile yayınlanmaktadır.

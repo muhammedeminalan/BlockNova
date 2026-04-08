@@ -1,0 +1,55 @@
+name: iOS CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+      - "fix/**"
+      - "refactor/**"
+
+jobs:
+  build-and-analyze:
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Xcode Version
+        run: xcodebuild -version
+
+      - name: Debug Build
+        run: |
+          xcodebuild \
+            -project BlockNova.xcodeproj \
+            -scheme BlockNova \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Release Build
+        run: |
+          xcodebuild \
+            -project BlockNova.xcodeproj \
+            -scheme BlockNova \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Static Analyze
+        run: |
+          xcodebuild \
+            -project BlockNova.xcodeproj \
+            -scheme BlockNova \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            analyze
+
